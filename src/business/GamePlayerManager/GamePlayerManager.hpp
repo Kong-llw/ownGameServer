@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include "business/GamePlayer/GamePlayer.hpp"
 #include "core/User/UserStateManager.hpp"
-#include "network/IMessageSender.hpp"
+#include "network/session/IMessageSender.hpp"
 
 namespace Game {
     class GamePlayerManager {
@@ -21,7 +21,7 @@ namespace Game {
 
     private:
         std::unordered_map<UserId, std::shared_ptr<GamePlayer>> players_;
-        UserStateManager& user_state_manager_; // 引用用户状态管理器
+        UserStateManager& user_state_manager_; // 引用用户状态管理器 不含业务信息
         std::shared_mutex player_manager_mutex_; // 保护players_的线程安全
     };  
 }

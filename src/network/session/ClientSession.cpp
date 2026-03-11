@@ -1,12 +1,17 @@
-#include "network/ClientSession.hpp"
+#include "ClientSession.hpp"
 
 #include <asio/buffer.hpp>
+#include <stdexcept>
 
 namespace Network {
 
 ClientSession::ClientSession(SessionId session_id, std::shared_ptr<IMessageCodec> codec)
     : session_id_(session_id),
-      codec_(codec ? std::move(codec) : std::make_shared<PassthroughCodec>()) {}
+            codec_(std::move(codec)) {
+        if (!codec_) {
+                throw std::invalid_argument("ClientSession requires a non-null codec");
+        }
+}
 
 ClientSession::~ClientSession() = default;
 
@@ -15,21 +20,18 @@ SessionId ClientSession::GetSessionId() const {
 }
 
 void ClientSession::SetCodec(std::shared_ptr<IMessageCodec> codec) {
-    if (codec) {
-        codec_ = std::move(codec);
+    if (!codec) {
+        throw std::invalid_argument("SetCodec received null codec");
     }
+    codec_ = std::move(codec);
 }
 
-bool ClientSession::SendMessage(std::span<const uint8_t> message) {
-    if (!codec_) {
-        codec_ = std::make_shared<PassthroughCodec>();
-    }
-
+bool ClientSession::SendMessage(std::span<const std::byte> message) {
     auto encoded_message = codec_->Encode(message);
     return WriteEncodedPayload(std::move(encoded_message));
 }
 
-bool ClientSession::WriteEncodedPayload(std::vector<uint8_t>&& encoded_message) {
+bool ClientSession::WriteEncodedPayload(std::vector<std::byte>&& encoded_message) {
     // Hook for transport layer: place async_write queueing here.
     // In real async write, encoded_message must stay alive until handler completes.
     auto buffer_view = asio::buffer(encoded_message.data(), encoded_message.size());

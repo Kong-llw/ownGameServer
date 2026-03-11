@@ -39,14 +39,6 @@ SessionId UserConnectionManager::GetSessionId(UserId user_id) const {
     return session ? session->GetSessionId() : SessionId{};
 }
 
-bool UserConnectionManager::SendToUser(UserId user_id, std::span<const uint8_t> payload) const {
-    auto session = GetSession(user_id);
-    if (!session) {
-        return false;
-    }
-    return session->SendMessage(payload);
-}
-
 std::size_t UserConnectionManager::Size() const {
     std::shared_lock lock(mutex_);
     return user_to_session_.size();

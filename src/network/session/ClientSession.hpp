@@ -6,16 +6,16 @@
 
 #include "core/Types.h"
 #include "IMessageSender.hpp"
-#include "network/IMessageCodec.hpp"
+#include "network/codec/IMessageCodec.hpp"
 
 namespace Network {
 class ClientSession : public IMessageSender {
 public:
-    explicit ClientSession(SessionId session_id, std::shared_ptr<IMessageCodec> codec = nullptr);
+    explicit ClientSession(SessionId session_id, std::shared_ptr<IMessageCodec> codec);
     ~ClientSession() override;
 
     SessionId GetSessionId() const;
-    bool SendMessage(std::span<const uint8_t> message) override;
+    bool SendMessage(std::span<const std::byte> message) override;
     void SetCodec(std::shared_ptr<IMessageCodec> codec);
 
 private:

@@ -10,8 +10,8 @@
 #include <unordered_map>
 
 #include "core/Types.h"
-#include "network/ClientSession.hpp"
-
+#include "network/session/ClientSession.hpp"
+//只是起到一个转接表的功能，将用户ID和网络连接（Session）关联起来，供业务层查询
 namespace Network {
 
 template <typename C>
@@ -32,16 +32,6 @@ public:
 
     std::shared_ptr<ClientSession> GetSession(UserId user_id) const;
     SessionId GetSessionId(UserId user_id) const;
-
-    bool SendToUser(UserId user_id, std::span<const uint8_t> payload) const;
-
-    template <ContiguousContainer C>
-    bool SendToUser(UserId user_id, const C& payload) const {
-        const auto raw = std::span(std::data(payload), std::size(payload));
-        const auto bytes = std::as_bytes(raw);
-        const auto* ptr = reinterpret_cast<const uint8_t*>(bytes.data());
-        return SendToUser(user_id, std::span<const uint8_t>(ptr, bytes.size()));
-    }
 
     std::size_t Size() const;
 

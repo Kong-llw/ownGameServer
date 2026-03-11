@@ -4,7 +4,8 @@
 #include "src/core/Types.h"
 
 struct UserBaseInfo {
-    UserId  user_id;
+    UserId user_id;
+    RoomId current_room_id;
     std::string user_name;
     SessionId session_id;
     bool is_online;

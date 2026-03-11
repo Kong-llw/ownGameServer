@@ -6,26 +6,19 @@
 #include <mutex>
 
 #include "UserBaseInfo.hpp"
+#include "IUserStateStore.hpp"
 
-class UserStateManager{
+class UserStateManager : public IUserStateStore {
 private:
     std::unordered_map<SessionId, UserBaseInfo> user_states;
     std::shared_mutex state_mutex; 
 
 public:
-    std::optional<UserBaseInfo> Get(UserId uid) const
-    {
-        std::shared_lock lock(state_mutex);
-        auto it = user_states.find(uid);
-        if (it == user_states.end()) return std::nullopt;
-        return it->second;
-    }
-
-    // 写：独占锁
-    bool Update(const UserBaseInfo& info)
-    {
-        std::unique_lock lock(state_mutex);
-        user_states[info.user_id] = info;
-        return true;
-    }
+    ~UserStateManager() = default;
+    std::optional<UserBaseInfo> GetUserState(UserId id) const override;
+    bool UpdateUserRoom(UserId id, RoomId new_room_id) override;
+    bool UpdateUserOnlineStatus(UserId id, bool is_online) override;
+    bool UpdateUserName(UserId id, const std::string& new_name) override;
+    bool UpdateUserSession(UserId id, SessionId new_session_id) override;
+    bool UpdateUserState(const UserBaseInfo& info) override;
 };  
