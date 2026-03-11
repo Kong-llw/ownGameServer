@@ -11,12 +11,6 @@ public:
 
     template <ContiguousContainer C>
     bool SendToUser(UserId user_id, const C& payload) const {
-        /*
-        const auto raw = std::span(std::data(payload), std::size(payload));
-        const auto bytes = std::as_bytes(raw);
-        const auto* ptr = reinterpret_cast<const uint8_t*>(bytes.data());
-        return SendMessageToUser(user_id, std::span<const uint8_t>(ptr, bytes.size()));
-        */
         auto bytes = std::as_bytes(std::span(payload));
         return SendMessageToUser(user_id, bytes);
     }

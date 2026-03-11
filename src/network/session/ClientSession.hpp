@@ -19,7 +19,7 @@ public:
     void SetCodec(std::shared_ptr<IMessageCodec> codec);
 
 private:
-    bool WriteEncodedPayload(std::vector<uint8_t>&& encoded_message);
+    bool WriteEncodedPayload(std::vector<std::byte>&& encoded_message);
 
     SessionId session_id_;
     std::shared_ptr<IMessageCodec> codec_;
