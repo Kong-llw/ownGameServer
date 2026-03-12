@@ -5,7 +5,7 @@
 
 struct UserBaseInfo {
     UserId user_id;
-    RoomId current_room_id;
+    GroupId current_group_id;
     std::string user_name;
     SessionId session_id;
     bool is_online;

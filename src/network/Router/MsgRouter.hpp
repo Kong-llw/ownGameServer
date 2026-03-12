@@ -1,12 +1,12 @@
 #pragma once
 #include "IBusinessMsgGateway.hpp"
 #include "network/session/IMessageSender.hpp"
-#include "network/UserConnectionManager.hpp"
+#include "network/UserSessionMap.hpp"
 
 namespace Network {
 class MsgRouter : public IBusinessMsgGateway {
 public:
-    explicit MsgRouter(UserConnectionManager& connection_manager) : connection_manager_(connection_manager) {}
+    explicit MsgRouter(UserSessionMap& connection_manager) : connection_manager_(connection_manager) {}
     ~MsgRouter() override = default;
 
     template <ContiguousContainer C>
@@ -18,6 +18,6 @@ public:
     bool SendMessageToUser(UserId id, std::span<const std::byte> msg) override;
     bool BroadcastToRoom(RoomId id, std::span<const std::byte> msg) override;
 private:
-    UserConnectionManager& connection_manager_;
+    UserSessionMap& connection_manager_;
 };  
 }

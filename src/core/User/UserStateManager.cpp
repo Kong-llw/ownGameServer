@@ -9,11 +9,11 @@ std::optional<UserBaseInfo> UserStateManager::GetUserState(UserId id) const {
     return it->second;
 }
 
-bool UserStateManager::UpdateUserRoom(UserId id, RoomId new_room_id) {
+bool UserStateManager::UpdateUserGroup(UserId id, GroupId new_group_id) {
     std::unique_lock lock(state_mutex);
     auto it = user_states.find(id);
     if (it == user_states.end()) return false;
-    it->second.current_room_id = new_room_id;
+    it->second.current_group_id = new_group_id;
     return true;
 }
 

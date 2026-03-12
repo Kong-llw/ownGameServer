@@ -24,7 +24,7 @@ concept ContiguousContainer =
     } &&
     std::is_trivially_copyable_v<std::remove_cv_t<std::ranges::range_value_t<C>>>;
 
-class UserConnectionManager {
+class UserSessionMap {
 public:
     void Bind(UserId user_id, std::shared_ptr<ClientSession> session);
     bool Unbind(UserId user_id);

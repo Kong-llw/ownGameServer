@@ -16,7 +16,7 @@ private:
 public:
     ~UserStateManager() = default;
     std::optional<UserBaseInfo> GetUserState(UserId id) const override;
-    bool UpdateUserRoom(UserId id, RoomId new_room_id) override;
+    bool UpdateUserGroup(UserId id, GroupId new_group_id) override;
     bool UpdateUserOnlineStatus(UserId id, bool is_online) override;
     bool UpdateUserName(UserId id, const std::string& new_name) override;
     bool UpdateUserSession(UserId id, SessionId new_session_id) override;

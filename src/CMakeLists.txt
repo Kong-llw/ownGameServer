@@ -1,12 +1,12 @@
 # ========== 收集源码（初期空文件，后续补充） ==========
 # 基础层
-file(GLOB CORE_SRCS "core/*.h" "core/*.cpp")
+file(GLOB_RECURSE CORE_SRCS CONFIGURE_DEPENDS "core/*.h" "core/*.hpp" "core/*.cpp")
 # 网络层
-file(GLOB NETWORK_SRCS "network/*.h" "network/*.cpp")
+file(GLOB_RECURSE NETWORK_SRCS CONFIGURE_DEPENDS "network/*.h" "network/*.hpp" "network/*.cpp")
 # 协议层
-file(GLOB PROTOCOL_SRCS "protocol/*.h" "protocol/*.cpp")
+file(GLOB_RECURSE PROTOCOL_SRCS CONFIGURE_DEPENDS "protocol/*.h" "protocol/*.hpp" "protocol/*.cpp")
 # 业务层
-file(GLOB BUSINESS_SRCS "business/*.h" "business/*.cpp")
+file(GLOB_RECURSE BUSINESS_SRCS CONFIGURE_DEPENDS "business/*.h" "business/*.hpp" "business/*.cpp")
 
 # ========== 构建可执行程序 ==========
 add_executable(game_server
