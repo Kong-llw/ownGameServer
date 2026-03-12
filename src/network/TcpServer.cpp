@@ -1,5 +1,6 @@
 #include <asio.hpp>
 #include <iostream>
+#include "network/session/ClientSession.hpp"
 
 using tcp = asio::ip::tcp;
 #define SERVER_PORT 20002

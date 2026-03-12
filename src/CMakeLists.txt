@@ -25,6 +25,11 @@ target_link_libraries(game_server
         pthread                 # Linux线程库（Asio需要）
 )
 
+target_compile_definitions(game_server
+    PRIVATE
+        ASIO_STANDALONE
+)
+
 # ========== 头文件路径 ==========
 target_include_directories(game_server
     PRIVATE

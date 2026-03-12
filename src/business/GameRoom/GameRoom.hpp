@@ -8,7 +8,7 @@
 #include "core/Types.h"
 #include "business/Group/Group.hpp"
 #include "business/GameLogic/GameProto.hpp"
-#include "network/Router/IBusinessMsgGateway.hpp"
+#include "protocol/Router/IBusinessMsgGateway.hpp"
 #include "protocol/ProtocolType.hpp"
 
 struct GamePlayerInfo;
