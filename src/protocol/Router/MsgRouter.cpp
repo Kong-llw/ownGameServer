@@ -39,7 +39,7 @@ bool MsgRouter::BroadcastToRoom(RoomId id, std::span<const std::byte> msg) {
     return false;
 }
 
-bool MsgRouter::MsgDispatchToLogic(const std::vector<std::byte>& msg, ProtoInfo::ProtocolType type) {
+bool MsgRouter::MsgDispatchToLogic(const std::vector<std::byte>& msg, MsgProto::MsgType type) {
     (void)msg;
     (void)type;
     // Implementation here

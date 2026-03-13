@@ -40,7 +40,7 @@ public:
 
     bool SendMessageToUser(UserId id, std::span<const std::byte> msg) override;
     bool BroadcastToRoom(RoomId id, std::span<const std::byte> msg) override;
-    bool MsgDispatchToLogic(const std::vector<std::byte>& msg, ProtoInfo::ProtocolType type) override;
+    bool MsgDispatchToLogic(const std::vector<std::byte>& msg, MsgProto::MsgType type) override;
 
 private:
     std::shared_ptr<UserSessionMap> user_session_map_;

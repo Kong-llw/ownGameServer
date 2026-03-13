@@ -31,20 +31,21 @@ public:
     }
     std::vector<RoomInListInfo> GetRoomList() const;
     std::optional<RoomId> RoomCodeToId(const std::string& room_code) const;
-    bool RoomBroadCast(RoomId room_id, std::span<const std::byte> message, ProtoInfo::ProtocolType ptype);
+    bool RoomBroadCast(RoomId room_id, std::span<const std::byte> message, MsgProto::MsgType type);
     MatchInfo GetRoomMatchInfo(RoomId room_id);
     
-    RoomReqResult CreateRoom(GameRoomInfo&&room_info, std::string& out_room_code);
-    RoomReqResult JoinRoom(RoomId room_id, UserId player_id);
-    RoomReqResult LeaveRoom(RoomId room_id, UserId player_id);
-    RoomReqResult SetReady(RoomId room_id, UserId player_id, bool ready);
-    RoomReqResult StartGame(RoomId room_id, UserId player_id);
-    RoomReqResult ChangeMap(RoomId room_id, UserId player_id, const std::string& map_path);
-    RoomReqResult ChangeRoomName(RoomId room_id, UserId player_id, const std::string& new_name);
-    RoomReqResult ChangePassword(RoomId room_id, UserId player_id, const std::string& new_password);
-    RoomReqResult KickPlayer(RoomId room_id, UserId player_id, UserId target_id);
-    RoomReqResult ChangeCapacity(RoomId room_id, UserId player_id, size_t new_capacity);
-    RoomReqResult DissolveRoom(RoomId room_id, UserId player_id);
+    using Result = MsgProto::RoomReqResult;
+    Result CreateRoom(GameRoomInfo&&room_info, std::string& out_room_code);
+    Result JoinRoom(RoomId room_id, UserId player_id);
+    Result LeaveRoom(RoomId room_id, UserId player_id);
+    Result SetReady(RoomId room_id, UserId player_id, bool ready);
+    Result StartGame(RoomId room_id, UserId player_id);
+    Result ChangeMap(RoomId room_id, UserId player_id, const std::string& map_path);
+    Result ChangeRoomName(RoomId room_id, UserId player_id, const std::string& new_name);
+    Result ChangePassword(RoomId room_id, UserId player_id, const std::string& new_password);
+    Result KickPlayer(RoomId room_id, UserId player_id, UserId target_id);
+    Result ChangeCapacity(RoomId room_id, UserId player_id, size_t new_capacity);
+    Result DissolveRoom(RoomId room_id, UserId player_id);
 
 
 private:

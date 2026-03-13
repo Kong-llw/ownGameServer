@@ -18,7 +18,6 @@ namespace Game {
 
         UserId GetPlayerId() const { return info_.b_info.user_id; }
         GroupId GetGroupId() const { return info_.b_info.current_group_id; }
-        RoomId GetRoomId() const { return GetGroupId(); }
         const GamePlayerInfo& GetInfo() const { return info_; }
         void UpdateInfo(const GamePlayerInfo& new_info);
 

@@ -41,6 +41,13 @@ target_include_directories(game_server
 # ========== 编译器选项（警告+优化） ==========
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(game_server PRIVATE -Wall -Wextra -Werror -O2)
+
+    # Enable hardware CRC-related instruction sets so feature macros are visible in code.
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64|i[3-6]86)$")
+        target_compile_options(game_server PRIVATE -msse4.2)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+        target_compile_options(game_server PRIVATE -march=armv8-a+crc)
+    endif()
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)

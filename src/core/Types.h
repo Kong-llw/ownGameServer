@@ -10,4 +10,4 @@ using SessionId  = std::uint32_t;
 using GroupId    = std::uint32_t;
 using RoomId     = GroupId;
 
-using MsgId      = std::uint32_t;
+using MsgId      = std::uint64_t;

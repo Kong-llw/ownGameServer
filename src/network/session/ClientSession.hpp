@@ -1,10 +1,12 @@
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <span>
 #include <vector>
 
 #include "core/Types.h"
+#include "protocol/MessageProto.hpp"
 #include "IMessageSender.hpp"
 #include "network/codec/IMessageCodec.hpp"
 
@@ -20,8 +22,10 @@ public:
 
 private:
     bool WriteEncodedPayload(std::vector<std::byte>&& encoded_message);
+    static MsgId NextOutboundMsgId();
 
     SessionId session_id_;
+    std::vector<std::byte> read_buffer_;
     std::shared_ptr<IMessageCodec> codec_;
 };
 }

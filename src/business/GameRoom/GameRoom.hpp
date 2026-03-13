@@ -9,28 +9,10 @@
 #include "business/Group/Group.hpp"
 #include "business/GameLogic/GameProto.hpp"
 #include "protocol/Router/IBusinessMsgGateway.hpp"
-#include "protocol/ProtocolType.hpp"
+#include "protocol/MessageProto.hpp"
 
 struct GamePlayerInfo;
 enum class RoomState { LOBBY = 0, RUNNING = 1 };
-
-// 房间操作返回码
-enum class RoomReqResult {
-    OK = 0,
-    FULL,
-    NOT_FOUND,
-    ALREADY_IN_ROOM,
-    NOT_IN_ROOM,                                    
-    NOT_OWNER,
-    INVALID_CAPACITY,
-    ALREADY_RUNNING,
-    NOT_READY,
-    GEN_ROOMCODE_FAILED,
-
-    EMPTY_REQ,
-    NOT_AUTHORIZED,
-    UNKNOWN_ERROR
-};
 
 struct RoomInListInfo{      //客户端搜寻房间的时候，列表显示需要的信息
     std::string room_code;  //客户端识别房间用的 大写字母+数字
@@ -74,54 +56,55 @@ namespace Game {
         }
         const std::vector<UserId>& GetPlayersId() const { return group_.GetMembers(); }
 
+        using Result = MsgProto::RoomReqResult;
         MatchInfo CreateMatchInfo(); // 游戏开始时根据创建房间信息，用于创建状态机
-        RoomReqResult JoinRoom(UserId player_id) { return MapGroupResult(group_.AddMember(player_id)); }
-        RoomReqResult LeaveRoom(UserId player_id) { return MapGroupResult(group_.RemoveMember(player_id)); }
-        RoomReqResult SetReady(UserId player_id, bool ready);
-        RoomReqResult StartGame(UserId player_id);
-        RoomReqResult ChangeMap(UserId player_id, const std::string& map_path);
-        RoomReqResult ChangeRoomName(UserId player_id, const std::string& new_name) {
+        Result JoinRoom(UserId player_id) { return MapGroupResult(group_.AddMember(player_id)); }
+        Result LeaveRoom(UserId player_id) { return MapGroupResult(group_.RemoveMember(player_id)); }
+        Result SetReady(UserId player_id, bool ready);
+        Result StartGame(UserId player_id);
+        Result ChangeMap(UserId player_id, const std::string& map_path);
+        Result ChangeRoomName(UserId player_id, const std::string& new_name) {
             if (player_id != info_.owner_id) {
-                return RoomReqResult::NOT_OWNER;
+                return Result::NOT_OWNER;
             }
             info_.room_name = new_name;
-            return RoomReqResult::OK;
+            return Result::OK;
         }
-        RoomReqResult ChangePassword(UserId player_id, const std::string& new_password) {
+        Result ChangePassword(UserId player_id, const std::string& new_password) {
             if (player_id != info_.owner_id) {
-                return RoomReqResult::NOT_OWNER;
+                return Result::NOT_OWNER;
             }
             info_.password = new_password;
-            return RoomReqResult::OK;
+            return Result::OK;
         }
-        RoomReqResult KickPlayer(UserId player_id, UserId target_id);
-        RoomReqResult ChangeCapacity(UserId player_id, size_t new_capacity) {
+        Result KickPlayer(UserId player_id, UserId target_id);
+        Result ChangeCapacity(UserId player_id, size_t new_capacity) {
             if (player_id != info_.owner_id) {
-                return RoomReqResult::NOT_OWNER;
+                return Result::NOT_OWNER;
             }
             return MapGroupResult(group_.SetCapacity(new_capacity));
         }
-        RoomReqResult DissolveRoom(UserId player_id);
+        Result DissolveRoom(UserId player_id);
 
-        void Broadcast(std::span<const std::byte> message, ProtoInfo::ProtocolType ptype);
-        void SendTo(UserId playerId, std::span<const std::byte> message, ProtoInfo::ProtocolType ptype);
+        void Broadcast(std::span<const std::byte> message, MsgProto::MsgType type);
+        void SendTo(UserId playerId, std::span<const std::byte> message, MsgProto::MsgType type);
 
         void SetMessageGateway(std::shared_ptr<Network::IBusinessMsgGateway> gateway) { message_gateway_ = gateway; }
     private:
-        static RoomReqResult MapGroupResult(GroupResult result) {
+        static Result MapGroupResult(GroupResult result) {
             switch (result) {
             case GroupResult::OK:
-                return RoomReqResult::OK;
+                return Result::OK;
             case GroupResult::FULL:
-                return RoomReqResult::FULL;
+                return Result::FULL;
             case GroupResult::ALREADY_IN_GROUP:
-                return RoomReqResult::ALREADY_IN_ROOM;
+                return Result::ALREADY_IN_ROOM;
             case GroupResult::NOT_IN_GROUP:
-                return RoomReqResult::NOT_IN_ROOM;
+                return Result::NOT_IN_ROOM;
             case GroupResult::INVALID_CAPACITY:
-                return RoomReqResult::INVALID_CAPACITY;
+                return Result::INVALID_CAPACITY;
             }
-            return RoomReqResult::UNKNOWN_ERROR;
+            return Result::UNKNOWN_ERROR;
         }
 
         GameRoomInfo info_;

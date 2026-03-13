@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-namespace ProtoInfo {
-enum class ProtocolType : std::uint8_t {
+namespace MsgProto {
+enum class MsgType : std::uint8_t {
     CHATMSG = 0,
     HEARTBEAT = 1,
     JSONCOMMAND = 2,
@@ -26,6 +26,24 @@ enum class RoomReqType : uint8_t {
     STARTGAME = 7,
     DISSOLVEROOM = 8,
     INITCOMPLETE = 9,
+};
+
+// 房间操作返回码
+enum class RoomReqResult {
+    OK = 0,
+    FULL,
+    NOT_FOUND,
+    ALREADY_IN_ROOM,
+    NOT_IN_ROOM,                                    
+    NOT_OWNER,
+    INVALID_CAPACITY,
+    ALREADY_RUNNING,
+    NOT_READY,
+    GEN_ROOMCODE_FAILED,
+
+    EMPTY_REQ,
+    NOT_AUTHORIZED,
+    UNKNOWN_ERROR
 };
 
 enum class LoginResult : uint8_t {
@@ -66,7 +84,7 @@ enum class FSMState : uint8_t {
 
 //DataBase Proto
 struct DBLoginRsp{
-    ProtoInfo::LoginResult result;
+    MsgProto::LoginResult result;
     uint32_t MsgLen;
     uint64_t user_id;
 };

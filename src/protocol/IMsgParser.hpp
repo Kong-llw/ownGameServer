@@ -2,10 +2,10 @@
 #include <vector>
 #include <string>
 #include "core/Types.h"
-#include "protocol/ProtocolType.hpp"
+#include "protocol/MessageProto.hpp"
 
 struct ParsedMsg {
-    ProtoInfo::ProtocolType main_type;
+    MsgProto::MsgType main_type;
     uint8_t sub_type;
     MsgId msg_id;
     uint8_t version;
