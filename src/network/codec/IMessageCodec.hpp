@@ -15,7 +15,7 @@ using ByteVec = std::vector<std::byte>;
 using SharedByteVec = std::shared_ptr<const ByteVec>;
 
 struct EncodeMessage {
-    MsgId msgId;
+    MsgId msg_id;
     uint8_t main_type;
     uint8_t sub_type;
     ByteSpan payload;
@@ -29,7 +29,7 @@ struct EncodeResult {
 };
 
 struct DecodedMessage {
-    MsgId msgId;
+    MsgId msg_id;
     uint8_t main_type;
     uint8_t sub_type;
     ByteVec payload;

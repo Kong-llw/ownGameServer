@@ -1,5 +1,5 @@
 #pragma once
-
+//和业务衔接的通信协议相关的结构体、枚举等
 #include <cstdint>
 
 namespace MsgProto {
@@ -62,26 +62,7 @@ enum class StartGameResult : uint8_t {
     INSUFFICIENT_CAPACITY = 3,
     UNKNOWN_ERROR = 4,
 };
-
-enum class FSMState : uint8_t {
-    Init,       //导入数据
-    MapLoad,    //配置地图
-    WaitForPlayers, //就绪,等待其他玩家
-    BattleIntroAnimation, // 入场动画
-    
-    //战斗循环
-    TurnStart, //重置数据 显示效果等 触发结算之类的
-    TurnWaitInput, //接收输入
-    TurnActionResolving, //
-    EXPAND,
-    GROW,
-    TurnEndProcessing,
-    BattleCheckResult,
-    END,
-    BattleCleanup,
-};
 }
-
 //DataBase Proto
 struct DBLoginRsp{
     MsgProto::LoginResult result;

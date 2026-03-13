@@ -6,10 +6,14 @@
 #include <ranges>
 #include <span>
 #include <type_traits>
+#include <unordered_map>
 
 #include "IBusinessMsgGateway.hpp"
 #include "network/session/IMessageSender.hpp"
+#include "network/codec/mTcpCodec.hpp"
+#include "business/IMsgHandler.hpp"
 #include "UserSessionMap.hpp"
+#include "business/GameRoom/GameRoomManager.hpp"
 
 namespace Network {
 
@@ -37,12 +41,20 @@ public:
     bool RegisterUserSession(UserId user_id, std::shared_ptr<ClientSession> session);
     bool UnregisterUserSession(UserId user_id);
     bool UnregisterSessionById(SessionId session_id);
+    bool SetRoomManager(std::weak_ptr<Game::GameRoomManager> room_manager);
 
-    bool SendMessageToUser(UserId id, std::span<const std::byte> msg) override;
-    bool BroadcastToRoom(RoomId id, std::span<const std::byte> msg) override;
-    bool MsgDispatchToLogic(const std::vector<std::byte>& msg, MsgProto::MsgType type) override;
+    bool SendMessageToUser(UserId id, std::span<const std::byte> encoded_msg) override;
+    bool BroadcastToRoom(RoomId id, std::span<const std::byte> encoded_msg) override;
 
+    bool onMsgReceive(DecodedMessage& msg) override;
+    bool RegisterMsgHandler(uint8_t main_type, std::shared_ptr<IMsgHandler> handler);
+    bool UnregisterMsgHandler(uint8_t main_type);
 private:
+    //服务->客户端(session) 接收已经编码的业务消息, 转发到对应session
     std::shared_ptr<UserSessionMap> user_session_map_;
+    std::weak_ptr<Game::GameRoomManager> game_room_manager_;
+
+    //客户端->服务 识别已经解码的消息类型 并交给对应的消息处理器
+    std::unordered_map<uint8_t, std::weak_ptr<IMsgHandler>> msg_handlers_; // main_type -> handler
 };
 }

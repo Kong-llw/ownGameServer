@@ -83,8 +83,8 @@ public:
             hdr.proto_type = static_cast<uint8_t>(ProtoType::Data);
             hdr.payload_len = htons(static_cast<uint16_t>(payload_len));
             hdr.flags = htons(flags);
-            hdr.msg_id_high = htonl(static_cast<uint32_t>(msg.msgId >> 32));
-            hdr.msg_id_low = htonl(static_cast<uint32_t>(msg.msgId & 0xFFFFFFFFu));
+            hdr.msg_id_high = htonl(static_cast<uint32_t>(msg.msg_id >> 32));
+            hdr.msg_id_low = htonl(static_cast<uint32_t>(msg.msg_id & 0xFFFFFFFFu));
             hdr.seq = htons(static_cast<uint16_t>(seq));
             hdr.total = htons(static_cast<uint16_t>(total_frames));
             hdr.checksum = htonl(crc);
@@ -139,7 +139,7 @@ public:
             }
             Network::DecodedMessage msg{};
             const size_t prefix_size = sizeof(msg.main_type) + sizeof(msg.sub_type);
-            msg.msgId = (static_cast<MsgId>(ntohl(hdr->msg_id_high)) << 32) | ntohl(hdr->msg_id_low);
+            msg.msg_id = (static_cast<MsgId>(ntohl(hdr->msg_id_high)) << 32) | ntohl(hdr->msg_id_low);
             memcpy(&msg.main_type, input.data() + offset + sizeof(ProtoHeader), sizeof(msg.main_type));
             memcpy(&msg.sub_type, input.data() + offset + sizeof(ProtoHeader) + sizeof(msg.main_type), sizeof(msg.sub_type));
             if (payload_len > prefix_size) {

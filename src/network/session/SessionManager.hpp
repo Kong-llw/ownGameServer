@@ -11,6 +11,7 @@
 
 #include "core/Types.h"
 #include "ClientSession.hpp"
+#include "protocol/Router/IBusinessMsgGateway.hpp"
 
 namespace Network {
 class UserSessionMap;
@@ -22,7 +23,9 @@ class SessionManager {
 public:
     static constexpr std::size_t kMaxConnectionNum = 1000;
 
-    explicit SessionManager(asio::any_io_executor exec, std::shared_ptr<UserSessionMap> user_session_map);
+    explicit SessionManager(asio::any_io_executor exec,
+         std::shared_ptr<UserSessionMap> user_session_map,
+         std::shared_ptr<IBusinessMsgGateway> gateway);
     ~SessionManager() = default;
 
     using SessionCloseHandler = std::function<void(std::shared_ptr<ClientSession>)>;
@@ -57,6 +60,7 @@ private:
     std::atomic<SessionId> next_session_id_{1};
     asio::any_io_executor executor_;
     std::shared_ptr<UserSessionMap> user_session_map_;
+    std::shared_ptr<IBusinessMsgGateway> gateway_;
     SessionCloseHandler on_session_close_;
 
     SessionManager() = delete;

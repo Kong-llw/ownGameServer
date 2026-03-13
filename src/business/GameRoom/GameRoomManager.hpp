@@ -29,9 +29,19 @@ public:
         }
         return it->second->GetAllInfo();
     }
+
+    std::optional<std::shared_ptr<GameRoom>> GetRoom(RoomId room_id) const {
+        std::shared_lock lock(mutex_);
+        auto it = rooms_.find(room_id);
+        if (it == rooms_.end()) {
+            return std::nullopt;
+        }
+        return it->second;
+    }
+
     std::vector<RoomInListInfo> GetRoomList() const;
     std::optional<RoomId> RoomCodeToId(const std::string& room_code) const;
-    bool RoomBroadCast(RoomId room_id, std::span<const std::byte> message, MsgProto::MsgType type);
+    bool RoomBroadCast(RoomId room_id, std::span<const std::byte> message);
     MatchInfo GetRoomMatchInfo(RoomId room_id);
     
     using Result = MsgProto::RoomReqResult;

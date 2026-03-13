@@ -6,9 +6,12 @@
 
 namespace Network {
 
-SessionManager::SessionManager(asio::any_io_executor exec, std::shared_ptr<UserSessionMap> user_session_map)
+SessionManager::SessionManager(asio::any_io_executor exec,
+     std::shared_ptr<UserSessionMap> user_session_map,
+     std::shared_ptr<IBusinessMsgGateway> gateway)
     : executor_(std::move(exec)),
-      user_session_map_(std::move(user_session_map)) {}
+      user_session_map_(std::move(user_session_map)),
+      gateway_(std::move(gateway)) {}
 
 void SessionManager::SetOnSessionClose(SessionCloseHandler cb) {
     std::unique_lock lock(mutex_);

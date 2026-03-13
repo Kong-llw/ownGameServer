@@ -8,11 +8,15 @@
 
 namespace Network {
 
-ClientSession::ClientSession(SessionId session_id, std::shared_ptr<IMessageCodec> codec)
-    : session_id_(session_id),
-            codec_(std::move(codec)) {
+ClientSession::ClientSession(SessionId session_id,
+     std::shared_ptr<IMessageCodec> codec,
+     std::shared_ptr<IBusinessMsgGateway> gateway)
+    : session_id_(session_id), codec_(std::move(codec)), gateway_(std::move(gateway)) {
         if (!codec_) {
             throw std::invalid_argument("ClientSession requires a non-null codec");
+        }
+        if (!gateway_) {
+            throw std::invalid_argument("ClientSession requires a non-null gateway");
         }
         read_buffer_.resize(64 * 1024); // 64KB read buffer
 }
@@ -28,6 +32,13 @@ void ClientSession::SetCodec(std::shared_ptr<IMessageCodec> codec) {
         throw std::invalid_argument("SetCodec received null codec");
     }
     codec_ = std::move(codec);
+}
+
+void ClientSession::SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway) {
+    if (!gateway) {
+        throw std::invalid_argument("SetGateway received null gateway");
+    }
+    gateway_ = std::move(gateway);
 }
 
 bool ClientSession::SendMessage(std::span<const std::byte> message) {

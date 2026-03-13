@@ -1,5 +1,5 @@
 #pragma once
-
+//对tcp协议的封装
 #include <cstdint>
 #include <cstddef>
 
