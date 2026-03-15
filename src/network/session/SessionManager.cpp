@@ -1,7 +1,10 @@
 #include "network/session/SessionManager.hpp"
 
 #include <mutex>
+#include <utility>
+#include <iostream>
 
+#include "network/session/TcpConnection.hpp"
 #include "protocol/Router/UserSessionMap.hpp"
 
 namespace Network {
@@ -22,26 +25,64 @@ SessionId SessionManager::AllocateSessionId() {
     return next_session_id_.fetch_add(1, std::memory_order_relaxed);
 }
 
-SessionId SessionManager::CreateSession(std::shared_ptr<ClientSession> session) {
-    if (!session) {
+SessionId SessionManager::CreateSession(tcp::socket socket, std::shared_ptr<IMessageCodec> codec) {
+    if (!gateway_ || !codec || !socket.is_open()) {
+        return SessionId{};
+    }
+    const SessionId session_id = AllocateSessionId();
+    if (session_id == SessionId{}) {
         return SessionId{};
     }
 
-    const SessionId sid = session->GetSessionId();
-    if (sid == SessionId{}) {
-        return SessionId{};
-    }
+    std::shared_ptr<ClientSession> session;
+    std::shared_ptr<TcpConnection> connection;
+    bool session_inserted = false;
 
-    std::unique_lock lock(mutex_);
-    if (sessions_.size() >= kMaxConnectionNum) {
-        return SessionId{};
-    }
+    try {
+        session = std::make_shared<ClientSession>(session_id, std::move(codec), gateway_);
+        connection = std::make_shared<TcpConnection>(std::move(socket), session_id);
+        session->SetConnection(connection);
 
-    auto [it, inserted] = sessions_.emplace(sid, std::move(session));
-    if (!inserted) {
+        connection->SetMessageCallback([weak_session = std::weak_ptr<ClientSession>(session)](std::vector<std::byte> payload) {
+            if (auto strong_session = weak_session.lock()) {
+                strong_session->onSocketRecv(payload);
+            }
+        });
+
+        auto weak_mgr = weak_from_this();
+        connection->SetCloseCallback([weak_mgr, session_id]() {
+            if (auto mgr = weak_mgr.lock()) {
+                mgr->CloseSession(session_id);
+            }
+        });
+        
+        //插入
+        {
+            std::unique_lock lock(mutex_);
+            if (sessions_.size() >= kMaxConnectionNum) {
+                //LOG_ERROR("CreateSession failed: reach max connection num ({})", kMaxConnectionNum);
+                return SessionId{};
+            }
+            
+            auto [it, inserted] = sessions_.emplace(session_id, std::move(session));
+            if (!inserted) {
+                return SessionId{};
+            }
+        }
+        session_inserted = true;
+        connection->Start();
+
+        return session_id;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        if (session_inserted) {
+            std::unique_lock lock(mutex_);
+            sessions_.erase(session_id);
+        }
         return SessionId{};
     }
-    return it->first;
 }
 
 bool SessionManager::CloseSession(SessionId session_id) {

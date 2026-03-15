@@ -28,6 +28,16 @@ constexpr size_t MAX_DATA_SIZE = 10 * 1024 * 1024; // 10MB
 
 class mTcpCodec : public Network::IMessageCodec {
 public:
+    static std::shared_ptr<Network::IMessageCodec> Shared() {
+        static std::shared_ptr<Network::IMessageCodec> codec = std::make_shared<mTcpCodec>();
+        return codec;
+    }
+
+    mTcpCodec(const mTcpCodec&) = delete;
+    mTcpCodec& operator=(const mTcpCodec&) = delete;
+    mTcpCodec(mTcpCodec&&) = delete;
+    mTcpCodec& operator=(mTcpCodec&&) = delete;
+
     Network::EncodeResult EncodeSync(Network::EncodeMessage& msg) override {
         Network::EncodeResult result{};
         if (msg.payload.empty() || msg.payload.size() > MAX_DATA_SIZE) {
@@ -166,4 +176,5 @@ public:
     }
 
 private:
+    mTcpCodec() = default;
 };

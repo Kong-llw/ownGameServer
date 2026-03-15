@@ -1,5 +1,6 @@
 #include <iostream>
 #include <asio.hpp>
+#include "network/TcpServer.hpp"
 
 int main()
 {
@@ -11,8 +12,8 @@ int main()
             io_context.stop();
         });
 
-        TcpServer server(io_context);
-        std::cout << "Server is running on port " << SERVER_PORT << std::endl;
+        Network::TcpServer server(io_context);
+        std::cout << "Server is running on port " << Network::TcpServer::kServerPort << std::endl;
         io_context.run();
 
         std::cout << "Server stopped (io_context exited)" << std::endl;

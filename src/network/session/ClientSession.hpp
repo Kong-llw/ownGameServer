@@ -29,7 +29,10 @@ public:
     bool SendMessage(std::span<const std::byte> message) override;
     void SetCodec(std::shared_ptr<IMessageCodec> codec);
     void SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway);
-    void onSocketRecv(std::span<const std::byte> data);private:
+    void SetConnection(std::shared_ptr<TcpConnection> connection);
+    void onSocketRecv(std::span<const std::byte> data);
+
+private:
     bool WriteEncodedPayload(std::vector<std::byte>&& encoded_message);
     static MsgId NextOutboundMsgId();
 

@@ -41,6 +41,28 @@ void ClientSession::SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway) {
     gateway_ = std::move(gateway);
 }
 
+void ClientSession::SetConnection(std::shared_ptr<TcpConnection> connection) {
+    if (!connection) {
+        throw std::invalid_argument("SetConnection received null connection");
+    }
+    connection_ = std::move(connection);
+}
+
+void ClientSession::onSocketRecv(std::span<const std::byte> data) {
+    if (data.empty()) {
+        return;
+    }
+
+    auto decode_result = codec_->DecodeSync(data);
+    if (!decode_result.success) {
+        return;
+    }
+
+    for (auto& msg : decode_result.messages) {
+        gateway_->onMsgReceive(msg);
+    }
+}
+
 bool ClientSession::SendMessage(std::span<const std::byte> message) {
     const MsgId msg_id = NextOutboundMsgId();
     const uint8_t type = static_cast<uint8_t>(ProtoType::Data);
@@ -59,12 +81,11 @@ MsgId ClientSession::NextOutboundMsgId() {
 }
 
 bool ClientSession::WriteEncodedPayload(std::vector<std::byte>&& encoded_message) {
-    // Hook for transport layer: place async_write queueing here.
-    // In real async write, encoded_message must stay alive until handler completes.
-    auto buffer_view = asio::buffer(encoded_message.data(), encoded_message.size());
-    (void)buffer_view;
-
-    return false;
+    if (!connection_ || encoded_message.empty()) {
+        return false;
+    }
+    connection_->Send(std::move(encoded_message));
+    return true;
 }
 
 } // namespace Network

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <cstdint>
-#include "src/core/Types.h"
+#include "core/Types.h"
 
 struct UserBaseInfo {
     UserId user_id;

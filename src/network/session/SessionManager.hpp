@@ -19,7 +19,7 @@ class UserSessionMap;
 
 namespace Network {
 
-class SessionManager {
+class SessionManager : public std::enable_shared_from_this<SessionManager> {
 public:
     static constexpr std::size_t kMaxConnectionNum = 1000;
 
@@ -33,7 +33,7 @@ public:
 
     SessionId AllocateSessionId();
 
-    SessionId CreateSession(std::shared_ptr<ClientSession> session);
+    SessionId CreateSession(tcp::socket socket, std::shared_ptr<IMessageCodec> codec);
     bool CloseSession(SessionId session_id);
     bool IsConnectionFull() const;
     std::shared_ptr<ClientSession> GetSession(SessionId session_id) const;
