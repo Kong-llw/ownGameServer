@@ -86,8 +86,8 @@ namespace Game {
         }
         Result DissolveRoom(UserId player_id);
 
-        void Broadcast(std::span<const std::byte> message, MsgProto::MsgType type);
-        void SendTo(UserId playerId, std::span<const std::byte> message, MsgProto::MsgType type);
+        void Broadcast(Network::EncodeMessage& message);
+        void SendTo(UserId playerId, Network::EncodeMessage& message);
 
         void SetMessageGateway(std::shared_ptr<Network::IBusinessMsgGateway> gateway) { message_gateway_ = gateway; }
     private:

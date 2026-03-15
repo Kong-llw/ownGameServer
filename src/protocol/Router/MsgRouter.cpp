@@ -12,7 +12,10 @@ MsgRouter::MsgRouter(std::shared_ptr<UserSessionMap> user_session_map)
 }
 
 bool MsgRouter::RegisterUserSession(UserId user_id, std::shared_ptr<ClientSession> session) {
-    user_session_map_->Bind(user_id, std::move(session));
+    if (!session) {
+        return false;
+    }
+    user_session_map_->Bind(user_id, session->GetSessionId());
     return true;
 }
 
@@ -24,29 +27,47 @@ bool MsgRouter::UnregisterSessionById(SessionId session_id) {
     return user_session_map_->UnbindBySessionId(session_id);
 }
 
+bool MsgRouter::SetSessionManager(std::weak_ptr<SessionManager> session_manager) {
+    session_manager_ = std::move(session_manager);
+    return true;
+}
+
 bool MsgRouter::SetRoomManager(std::weak_ptr<Game::GameRoomManager> room_manager) {
     game_room_manager_ = std::move(room_manager);
     return true;
 }
 
-bool MsgRouter::SendMessageToUser(UserId id, std::span<const std::byte> msg) {
-    auto session = user_session_map_->GetSession(id);
+bool MsgRouter::SendMessageToUser(UserId id, EncodeMessage& msg) {
+    const SessionId sid = user_session_map_->GetSessionId(id);
+    if (sid == SessionId{}) {
+        return false;
+    }
+    return SendMessageToSession(sid, msg);
+}
+
+bool MsgRouter::SendMessageToSession(SessionId id, EncodeMessage& msg) {
+    auto session_manager = session_manager_.lock();
+    if (!session_manager) {
+        return false;
+    }
+    auto session = session_manager->GetSession(id);
     if (!session) {
         return false;
     }
     return session->SendMessage(msg);
 }
 
-bool MsgRouter::BroadcastToRoom(RoomId id, std::span<const std::byte> encoded_msg) {
+bool MsgRouter::BroadcastToRoom(RoomId id, EncodeMessage& msg) {
     auto room_manager = game_room_manager_.lock();
     if (!room_manager) {
         return false;
     }
-    return room_manager->RoomBroadCast(id, encoded_msg);
+    return room_manager->RoomBroadCast(id, msg);
+
 }
 
-bool MsgRouter::onMsgReceive(DecodedMessage& msg) {
-    auto handler_it = msg_handlers_.find(msg.main_type);
+bool MsgRouter::onMsgReceive(const std::shared_ptr<Network::MsgPack>& msg) {
+    auto handler_it = msg_handlers_.find(msg->msg.main_type);
     if (handler_it == msg_handlers_.end()) {
         return false;
     }
@@ -55,7 +76,8 @@ bool MsgRouter::onMsgReceive(DecodedMessage& msg) {
         msg_handlers_.erase(handler_it);
         return false;
     }
-    //后续修改为异步
+    msg->sender_id = user_session_map_->GetUserId(msg->sender_session_id);
+    //HandleDecodedMsg必须为异步实现, 避免阻塞Router
     return handler->HandleDecodedMsg(msg);
 }
 

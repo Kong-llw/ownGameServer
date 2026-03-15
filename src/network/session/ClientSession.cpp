@@ -33,7 +33,7 @@ void ClientSession::SetCodec(std::shared_ptr<IMessageCodec> codec) {
     }
     codec_ = std::move(codec);
 }
-
+ 
 void ClientSession::SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway) {
     if (!gateway) {
         throw std::invalid_argument("SetGateway received null gateway");
@@ -52,21 +52,27 @@ void ClientSession::onSocketRecv(std::span<const std::byte> data) {
     if (data.empty()) {
         return;
     }
-
-    auto decode_result = codec_->DecodeSync(data);
+    read_buffer_.insert(read_buffer_.end(), data.begin(), data.end());
+    auto decode_result = codec_->DecodeSync(read_buffer_);
+    read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + decode_result.cost_offset);
+    
     if (!decode_result.success) {
         return;
     }
 
-    for (auto& msg : decode_result.messages) {
-        gateway_->onMsgReceive(msg);
+    for(auto& msg : decode_result.messages) {
+        auto pack_ptr = std::make_shared<MsgPack>();
+        pack_ptr->sender_session_id = session_id_;
+        pack_ptr->msg = std::move(msg);
+        gateway_->onMsgReceive(pack_ptr);
     }
 }
 
-bool ClientSession::SendMessage(std::span<const std::byte> message) {
-    const MsgId msg_id = NextOutboundMsgId();
-    const uint8_t type = static_cast<uint8_t>(ProtoType::Data);
-    Network::EncodeMessage msg{msg_id, type, 0, message, nullptr};
+bool ClientSession::SendMessage(EncodeMessage& msg) {
+    if (msg.msg_id == MsgId{}) { //此分支是主动发, 回应包时msg_id由业务层指定，主动发时由session生成唯一msg_id
+        msg.msg_id = NextOutboundMsgId();
+    }
+
     Network::EncodeResult result = codec_->EncodeSync(msg);
     if(!result.success) {
         // Handle encoding error

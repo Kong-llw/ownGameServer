@@ -59,7 +59,7 @@ private:
     mutable std::shared_mutex mutex_;
     std::atomic<SessionId> next_session_id_{1};
     asio::any_io_executor executor_;
-    std::shared_ptr<UserSessionMap> user_session_map_;
+    //std::shared_ptr<UserSessionMap> user_session_map_;
     std::shared_ptr<IBusinessMsgGateway> gateway_;
     SessionCloseHandler on_session_close_;
 

@@ -1,7 +1,7 @@
 #pragma once
 //和业务衔接的通信协议相关的结构体、枚举等
 #include <cstdint>
-
+#include <string>
 namespace MsgProto {
 enum class MsgType : std::uint8_t {
     CHATMSG = 0,
@@ -10,7 +10,7 @@ enum class MsgType : std::uint8_t {
     JSONDATA = 3,
     ROOMREQ = 4,
     ROOMRSP = 5,
-    LOGIN = 6,
+    LOGINREQ = 6,
     STATECONTROL = 7,
     CMDREQ = 8,
     CMDRSP = 9,
@@ -63,9 +63,28 @@ enum class StartGameResult : uint8_t {
     UNKNOWN_ERROR = 4,
 };
 }
-//DataBase Proto
-struct DBLoginRsp{
+struct UserLoginInfo { //login logout共用
     MsgProto::LoginResult result;
-    uint32_t MsgLen;
-    uint64_t user_id;
+    UserId user_id;//logout时使用
+    SessionId session_id; //login时使用
+    std::string error_msg;
+};
+
+struct RoomJoinInfo {
+    MsgProto::RoomReqResult result;
+    UserId user_id;
+    RoomId room_id;
+    std::string error_msg;
+};
+
+//DataBase Proto
+struct DBLoginReq{
+    std::string user_name;
+    std::string password;
+};
+
+struct DBLoginRsp{
+    UserId user_id;
+    MsgProto::LoginResult result;
+    std::string error_msg; //登录失败时的错误信息
 };

@@ -14,7 +14,7 @@ using tcp = asio::ip::tcp;
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
     using CloseCallback = std::function<void()>;
-    using MessageCallback = std::function<void(std::vector<std::byte>)>;
+    using MessageCallback = std::function<void(std::span<std::byte>)>;
     
     explicit TcpConnection(tcp::socket socket, SessionId session_id)
         : socket_(std::move(socket)), session_id_(session_id), 

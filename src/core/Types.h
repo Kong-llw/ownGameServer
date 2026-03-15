@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+//所有值从1开始， 0表示无效ID
 // 用户ID
 using UserId     = std::uint32_t;
 // 会话ID（网络连接唯一ID）

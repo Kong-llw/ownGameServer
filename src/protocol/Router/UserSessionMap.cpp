@@ -4,44 +4,77 @@
 
 namespace Network {
 
-void UserSessionMap::Bind(UserId user_id, std::shared_ptr<ClientSession> session) {
+void UserSessionMap::Bind(UserId user_id, SessionId session_id) {
     std::unique_lock lock(mutex_);
-    user_to_session_[user_id] = std::move(session);
+    auto old = user_to_session_.find(user_id);
+    if (old != user_to_session_.end()) {
+        session_to_user_.erase(old->second);
+    }
+    user_to_session_[user_id] = session_id;
+    session_to_user_[session_id] = user_id;
 }
 
 bool UserSessionMap::Unbind(UserId user_id) {
     std::unique_lock lock(mutex_);
-    return user_to_session_.erase(user_id) > 0;
+    auto it = user_to_session_.find(user_id);
+    if (it == user_to_session_.end()) {
+        return false;
+    }
+    session_to_user_.erase(it->second);
+    user_to_session_.erase(it);
+    return true;
 }
 
 bool UserSessionMap::UnbindBySessionId(SessionId session_id) {
     std::unique_lock lock(mutex_);
-    for (auto it = user_to_session_.begin(); it != user_to_session_.end(); ++it) {
-        if (it->second && it->second->GetSessionId() == session_id) {
-            user_to_session_.erase(it);
-            return true;
-        }
+    auto it = session_to_user_.find(session_id);
+    if (it == session_to_user_.end()) {
+        return false;
     }
-    return false;
+    const UserId uid = it->second;
+    session_to_user_.erase(it);
+    user_to_session_.erase(uid);
+    return true;
 }
 
-std::shared_ptr<ClientSession> UserSessionMap::GetSession(UserId user_id) const {
+SessionId UserSessionMap::GetSessionId(UserId user_id) const {
     std::shared_lock lock(mutex_);
     auto it = user_to_session_.find(user_id);
     if (it == user_to_session_.end()) {
-        return nullptr;
+        return SessionId{};
     }
     return it->second;
 }
 
-SessionId UserSessionMap::GetSessionId(UserId user_id) const {
-    auto session = GetSession(user_id);
-    return session ? session->GetSessionId() : SessionId{};
+UserId UserSessionMap::GetUserId(SessionId session_id) const {
+    std::shared_lock lock(mutex_);
+    auto it = session_to_user_.find(session_id);
+    if (it == session_to_user_.end()) {
+        return UserId{};
+    }
+    return it->second;
 }
 
 std::size_t UserSessionMap::Size() const {
     std::shared_lock lock(mutex_);
     return user_to_session_.size();
+}
+
+void UserSessionMap::onUserLogin(UserLoginInfo info) {
+    if (info.result != MsgProto::LoginResult::SUCCESS || info.user_id == UserId{} || info.session_id == SessionId{}) {
+        return;
+    }
+    Bind(info.user_id, info.session_id);
+}
+
+void UserSessionMap::onUserLogout(UserLoginInfo info) {
+    if (info.user_id != UserId{}) {
+        Unbind(info.user_id);
+        return;
+    }
+    if (info.session_id != SessionId{}) {
+        UnbindBySessionId(info.session_id);
+    }
 }
 
 } // namespace Network

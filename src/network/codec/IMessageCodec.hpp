@@ -42,6 +42,13 @@ struct DecodeResult {
     size_t cost_offset;//表示应丢弃字节数 (无法解析的内容 或 已经处理完的内容)
 };
 
+struct MsgPack{ //在decode后进行填充
+    UserId sender_id;
+    SessionId sender_session_id;
+    RoomId room_id;
+    DecodedMessage msg;
+};
+
 class IMessageCodec {
 public:
     virtual ~IMessageCodec() = default;

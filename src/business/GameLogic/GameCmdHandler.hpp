@@ -26,7 +26,7 @@ public:
 
     void Tick(uint64_t delta_ms); //定时器驱动的状态机更新
     void ProcessCommand(const BattleCmd& cmd);
-    bool HandleDecodedMsg(Network::DecodedMessage& msg) override;
+    bool HandleDecodedMsg(const std::shared_ptr<Network::MsgPack>& msg) override;
 private:
     GameCmdHandler(const GameCmdHandler&) = delete;
     GameCmdHandler(GameCmdHandler&&) = delete;

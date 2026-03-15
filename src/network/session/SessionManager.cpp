@@ -13,7 +13,7 @@ SessionManager::SessionManager(asio::any_io_executor exec,
      std::shared_ptr<UserSessionMap> user_session_map,
      std::shared_ptr<IBusinessMsgGateway> gateway)
     : executor_(std::move(exec)),
-      user_session_map_(std::move(user_session_map)),
+      //user_session_map_(std::move(user_session_map)),
       gateway_(std::move(gateway)) {}
 
 void SessionManager::SetOnSessionClose(SessionCloseHandler cb) {
@@ -43,19 +43,21 @@ SessionId SessionManager::CreateSession(tcp::socket socket, std::shared_ptr<IMes
         connection = std::make_shared<TcpConnection>(std::move(socket), session_id);
         session->SetConnection(connection);
 
-        connection->SetMessageCallback([weak_session = std::weak_ptr<ClientSession>(session)](std::vector<std::byte> payload) {
+        //给TcpConnect注入一个 对 ClientSession的反向路径 用于传回socket读取的内容
+        connection->SetMessageCallback([weak_session = std::weak_ptr<ClientSession>(session)](std::span<std::byte> payload) {
             if (auto strong_session = weak_session.lock()) {
                 strong_session->onSocketRecv(payload);
             }
         });
 
+        //TcpConnect关闭后，触发closeSession 回收ClientSession
         auto weak_mgr = weak_from_this();
         connection->SetCloseCallback([weak_mgr, session_id]() {
             if (auto mgr = weak_mgr.lock()) {
                 mgr->CloseSession(session_id);
             }
         });
-        
+
         //插入
         {
             std::unique_lock lock(mutex_);
@@ -98,10 +100,6 @@ bool SessionManager::CloseSession(SessionId session_id) {
         removed = std::move(it->second);
         sessions_.erase(it);
         callback = on_session_close_;
-    }
-
-    if (user_session_map_) {
-        user_session_map_->UnbindBySessionId(session_id);
     }
 
     if (callback && removed) {

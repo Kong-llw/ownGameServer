@@ -56,9 +56,9 @@ void TcpConnection::DoRead() {
             }
 
             if (message_callback_) {
-                std::vector<std::byte> payload(length);
-                std::memcpy(payload.data(), read_buffer_.data(), length);
-                message_callback_(std::move(payload));
+                //std::vector<std::byte> payload(length);
+                //std::memcpy(payload.data(), read_buffer_.data(), length);
+                message_callback_(std::span<std::byte>(read_buffer_.data(), length));
             }
 
             DoRead();

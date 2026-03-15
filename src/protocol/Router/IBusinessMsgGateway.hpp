@@ -11,8 +11,9 @@ class IBusinessMsgGateway {
 public:
     virtual ~IBusinessMsgGateway() = default;
 
-    virtual bool SendMessageToUser(UserId id, std::span<const std::byte> encoded_msg) = 0;
-    virtual bool BroadcastToRoom(RoomId id, std::span<const std::byte> encoded_msg) = 0;
-    virtual bool onMsgReceive(DecodedMessage& msg) = 0;
+    virtual bool SendMessageToUser(UserId id, EncodeMessage& msg) = 0;
+    virtual bool SendMessageToSession(SessionId id, EncodeMessage& msg) = 0;
+    virtual bool BroadcastToRoom(RoomId id, EncodeMessage& msg) = 0;
+    virtual bool onMsgReceive(const std::shared_ptr<Network::MsgPack>& msg) = 0;
 };
 } // namespace Network

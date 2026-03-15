@@ -13,10 +13,6 @@
 #include "protocol/Router/IBusinessMsgGateway.hpp"
 
 namespace Network {
-struct MsgPack{
-    UserId sender_id;
-    DecodedMessage msg;
-};
 
 class ClientSession : public IMessageSender {
 public:
@@ -26,15 +22,15 @@ public:
     ~ClientSession() override;
 
     SessionId GetSessionId() const;
-    bool SendMessage(std::span<const std::byte> message) override;
+    bool SendMessage(EncodeMessage& msg) override;
     void SetCodec(std::shared_ptr<IMessageCodec> codec);
     void SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway);
     void SetConnection(std::shared_ptr<TcpConnection> connection);
     void onSocketRecv(std::span<const std::byte> data);
-
+    static MsgId NextOutboundMsgId();
+    
 private:
     bool WriteEncodedPayload(std::vector<std::byte>&& encoded_message);
-    static MsgId NextOutboundMsgId();
 
     SessionId session_id_;
     std::shared_ptr<TcpConnection> connection_;
