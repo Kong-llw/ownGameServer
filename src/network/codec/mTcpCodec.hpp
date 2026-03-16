@@ -29,7 +29,7 @@ constexpr size_t MAX_DATA_SIZE = 10 * 1024 * 1024; // 10MB
 class mTcpCodec : public Network::IMessageCodec {
 public:
     static std::shared_ptr<Network::IMessageCodec> Shared() {
-        static std::shared_ptr<Network::IMessageCodec> codec = std::make_shared<mTcpCodec>();
+        static std::shared_ptr<Network::IMessageCodec> codec(new mTcpCodec());
         return codec;
     }
 
@@ -57,6 +57,19 @@ public:
         encoded.reserve(msg.payload.size() + total_frames * 
             (sizeof(ProtoHeader) + sizeof(msg.main_type) + sizeof(msg.sub_type)));
 
+        //心跳回复包
+        if (msg.proto_type == static_cast<uint8_t>(ProtoType::HeartBeat)) {
+            if (!msg.payload.empty()) {
+                result.success = false;
+                result.error_msg = "Heartbeat message should not have payload";
+                return result;
+            }
+            encoded = createHeartbeatFrame(msg.msg_id);
+            result.success = true;
+            return result;
+        }
+        
+        //业务包
         for (size_t seq = 0; seq < total_frames; ++seq) {
             const size_t offset = seq * CHUNK_SIZE;
             const size_t remain = msg.payload.size() - offset;
@@ -148,6 +161,14 @@ public:
                 return result;
             }
             Network::DecodedMessage msg{};
+            //心跳包特殊逻辑
+            if (hdr->proto_type == static_cast<uint8_t>(ProtoType::HeartBeat)) {
+                msg.proto_type = static_cast<uint8_t>(ProtoType::HeartBeat);
+                msg.msg_id = (static_cast<MsgId>(ntohl(hdr->msg_id_high)) << 32) | ntohl(hdr->msg_id_low);
+                result.messages.push_back(std::move(msg));
+                offset += frame_len;
+                continue;
+            }
             const size_t prefix_size = sizeof(msg.main_type) + sizeof(msg.sub_type);
             msg.msg_id = (static_cast<MsgId>(ntohl(hdr->msg_id_high)) << 32) | ntohl(hdr->msg_id_low);
             memcpy(&msg.main_type, input.data() + offset + sizeof(ProtoHeader), sizeof(msg.main_type));
@@ -165,12 +186,14 @@ public:
         return result;
     }
 
-    std::vector<std::byte> createHeartbeatFrame() {
+    std::vector<std::byte> createHeartbeatFrame(MsgId msg_id) {
         std::vector<std::byte> rt(sizeof(ProtoHeader));
         ProtoHeader hdr{};
         hdr.header = htonl(PROTO_MAGIC);
         hdr.version = ProtoFlags::VERSION;
         hdr.proto_type = static_cast<uint8_t>(ProtoType::HeartBeat);
+        hdr.msg_id_high = htonl(static_cast<uint32_t>(msg_id >> 32));
+        hdr.msg_id_low = htonl(static_cast<uint32_t>(msg_id & 0xFFFFFFFF));
         std::memcpy(rt.data(), &hdr, sizeof(ProtoHeader));
         return rt;
     }

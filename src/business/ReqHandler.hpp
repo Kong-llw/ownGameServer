@@ -17,6 +17,7 @@ public:
     using RoomLeaveCallback = std::function<void(RoomJoinInfo)>;
 
     bool HandleDecodedMsg(const std::shared_ptr<Network::MsgPack>& msg) override;
+    bool Authentication(const std::shared_ptr<Network::MsgPack>& msg) override;
     void SetGateway(std::shared_ptr<Network::IBusinessMsgGateway> gateway) { gateway_ = std::move(gateway); }
     
     bool RegLoginCallback(LoginCallback cb) {

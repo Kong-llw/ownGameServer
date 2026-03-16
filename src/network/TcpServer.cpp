@@ -10,12 +10,12 @@
 namespace Network {
 
 TcpServer::TcpServer(asio::io_context& io_context)
-    : acceptor_(io_context, tcp::endpoint(tcp::v4(), kServerPort)),
-      io_context_(io_context),
+    : io_context_(io_context),
+      acceptor_(io_context, tcp::endpoint(tcp::v4(), kServerPort)),
       user_session_map_(std::make_shared<UserSessionMap>()),
       msg_router_(std::make_shared<MsgRouter>(user_session_map_)),
       session_manager_(std::make_shared<SessionManager>(
-          io_context.get_executor(), user_session_map_, std::static_pointer_cast<IBusinessMsgGateway>(msg_router_))),
+          io_context.get_executor(), std::static_pointer_cast<IBusinessMsgGateway>(msg_router_))),
       codec_(mTcpCodec::Shared()) {
     session_manager_->SetOnSessionClose([](std::shared_ptr<ClientSession> /*session*/) {
         // Hook: logout/cleanup can be bound here later.

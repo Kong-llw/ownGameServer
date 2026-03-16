@@ -81,6 +81,12 @@ bool ClientSession::SendMessage(EncodeMessage& msg) {
     return WriteEncodedPayload(std::move(result.encoded_message));
 }
 
+void ClientSession::Close() {
+    if (connection_) {
+        connection_->Close();
+    }
+}
+
 MsgId ClientSession::NextOutboundMsgId() {
     static std::atomic<MsgId> next_id{1};
     return next_id.fetch_add(1, std::memory_order_relaxed);

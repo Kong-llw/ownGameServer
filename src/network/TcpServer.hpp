@@ -19,19 +19,19 @@ class SessionManager;
 using tcp = asio::ip::tcp;
 
 class TcpServer {
-public:
-    static constexpr uint16_t kServerPort = 20002;
+private:
+    void accept_connections();
 
+    asio::io_context& io_context_;
+    tcp::acceptor acceptor_;
+public:
     TcpServer(asio::io_context& io_context);
+    static constexpr uint16_t kServerPort = 20002;
+    
     std::shared_ptr<UserSessionMap> user_session_map_;
     std::shared_ptr<MsgRouter> msg_router_;
     std::shared_ptr<SessionManager> session_manager_;
     std::shared_ptr<IMessageCodec> codec_;
-private:
-    void accept_connections();
-
-    tcp::acceptor acceptor_;
-    asio::io_context& io_context_;
 };
 
 } // namespace Network

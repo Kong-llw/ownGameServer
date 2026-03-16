@@ -1,5 +1,6 @@
 #include "network/session/SessionManager.hpp"
 
+#include <chrono>
 #include <mutex>
 #include <utility>
 #include <iostream>
@@ -10,10 +11,9 @@
 namespace Network {
 
 SessionManager::SessionManager(asio::any_io_executor exec,
-     std::shared_ptr<UserSessionMap> user_session_map,
      std::shared_ptr<IBusinessMsgGateway> gateway)
     : executor_(std::move(exec)),
-      //user_session_map_(std::move(user_session_map)),
+    heartbeat_sweep_timer_(executor_),
       gateway_(std::move(gateway)) {}
 
 void SessionManager::SetOnSessionClose(SessionCloseHandler cb) {
@@ -70,9 +70,11 @@ SessionId SessionManager::CreateSession(tcp::socket socket, std::shared_ptr<IMes
             if (!inserted) {
                 return SessionId{};
             }
+            last_heartbeat_at_[session_id] = SteadyClock::now();
         }
         session_inserted = true;
         connection->Start();
+        EnsureHeartbeatSweepStarted();
 
         return session_id;
     }
@@ -82,6 +84,7 @@ SessionId SessionManager::CreateSession(tcp::socket socket, std::shared_ptr<IMes
         if (session_inserted) {
             std::unique_lock lock(mutex_);
             sessions_.erase(session_id);
+            last_heartbeat_at_.erase(session_id);
         }
         return SessionId{};
     }
@@ -99,7 +102,12 @@ bool SessionManager::CloseSession(SessionId session_id) {
         }
         removed = std::move(it->second);
         sessions_.erase(it);
+        last_heartbeat_at_.erase(session_id);
         callback = on_session_close_;
+    }
+
+    if (removed) {
+        removed->Close();
     }
 
     if (callback && removed) {
@@ -122,4 +130,70 @@ std::shared_ptr<ClientSession> SessionManager::GetSession(SessionId session_id) 
     return it->second;
 }
 
+void SessionManager::onSessionHeartbeat(SessionId session_id) {
+    std::unique_lock lock(mutex_);
+    if (sessions_.find(session_id) == sessions_.end()) {
+        return;
+    }
+    last_heartbeat_at_[session_id] = SteadyClock::now();
+}
+
+void SessionManager::EnsureHeartbeatSweepStarted() {
+    bool should_start = false;
+    {
+        std::unique_lock lock(mutex_);
+        if (!heartbeat_sweep_running_) {
+            heartbeat_sweep_running_ = true;
+            should_start = true;
+        }
+    }
+
+    if (should_start) {
+        ScheduleHeartbeatSweep();
+    }
+}
+
+void SessionManager::ScheduleHeartbeatSweep() {
+    heartbeat_sweep_timer_.expires_after(kHeartbeatCheckInterval);
+    heartbeat_sweep_timer_.async_wait([weak_self = weak_from_this()](const std::error_code& ec) {
+        if (auto self = weak_self.lock()) {
+            self->HandleHeartbeatSweep(ec);
+        }
+    });
+}
+
+void SessionManager::HandleHeartbeatSweep(const std::error_code& ec) {
+    if (ec == asio::error::operation_aborted) {
+        return;
+    }
+
+    const auto now = SteadyClock::now();
+    std::vector<SessionId> expired_sessions;
+
+    {
+        std::unique_lock lock(mutex_);
+        for (const auto& [sid, heartbeat_at] : last_heartbeat_at_) {
+            if (sessions_.find(sid) == sessions_.end()) {
+                continue;
+            }
+            if (now - heartbeat_at > kHeartbeatTimeout) {
+                expired_sessions.push_back(sid);
+            }
+        }
+    }
+
+    for (const SessionId sid : expired_sessions) {
+        CloseSession(sid);
+    }
+
+    {
+        std::unique_lock lock(mutex_);
+        if (sessions_.empty()) {
+            heartbeat_sweep_running_ = false;
+            return;
+        }
+    }
+
+    ScheduleHeartbeatSweep();
+}
 } // namespace Network

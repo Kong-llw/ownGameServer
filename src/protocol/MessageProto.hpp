@@ -2,10 +2,11 @@
 //和业务衔接的通信协议相关的结构体、枚举等
 #include <cstdint>
 #include <string>
+#include "core/Types.h"
 namespace MsgProto {
 enum class MsgType : std::uint8_t {
-    CHATMSG = 0,
-    HEARTBEAT = 1,
+    HEARTBEAT = 0,
+    CHATMSG = 1,
     JSONCOMMAND = 2,
     JSONDATA = 3,
     ROOMREQ = 4,

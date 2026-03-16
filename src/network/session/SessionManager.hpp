@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <asio.hpp>
 #include <functional>
 #include <memory>
@@ -24,7 +25,6 @@ public:
     static constexpr std::size_t kMaxConnectionNum = 1000;
 
     explicit SessionManager(asio::any_io_executor exec,
-         std::shared_ptr<UserSessionMap> user_session_map,
          std::shared_ptr<IBusinessMsgGateway> gateway);
     ~SessionManager() = default;
 
@@ -38,6 +38,7 @@ public:
     bool IsConnectionFull() const;
     std::shared_ptr<ClientSession> GetSession(SessionId session_id) const;
 
+    void onSessionHeartbeat(SessionId session_id);
     template <typename Callable> requires std::is_invocable_r_v<void, Callable, std::shared_ptr<ClientSession>>
     void forEachSession(Callable&& func) {
         std::vector<std::shared_ptr<ClientSession>> snapshot;
@@ -55,10 +56,21 @@ public:
     }
 
 private:
+    using SteadyClock = std::chrono::steady_clock;
+    static constexpr std::chrono::seconds kHeartbeatTimeout{30};
+    static constexpr std::chrono::seconds kHeartbeatCheckInterval{5};
+
+    void EnsureHeartbeatSweepStarted();
+    void ScheduleHeartbeatSweep();
+    void HandleHeartbeatSweep(const std::error_code& ec);
+
     std::unordered_map<SessionId, std::shared_ptr<ClientSession>> sessions_;
+    std::unordered_map<SessionId, SteadyClock::time_point> last_heartbeat_at_;
     mutable std::shared_mutex mutex_;
     std::atomic<SessionId> next_session_id_{1};
     asio::any_io_executor executor_;
+    asio::steady_timer heartbeat_sweep_timer_;
+    bool heartbeat_sweep_running_{false};
     //std::shared_ptr<UserSessionMap> user_session_map_;
     std::shared_ptr<IBusinessMsgGateway> gateway_;
     SessionCloseHandler on_session_close_;

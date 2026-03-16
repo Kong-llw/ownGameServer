@@ -23,6 +23,7 @@ public:
 
     SessionId GetSessionId() const;
     bool SendMessage(EncodeMessage& msg) override;
+    void Close();
     void SetCodec(std::shared_ptr<IMessageCodec> codec);
     void SetGateway(std::shared_ptr<IBusinessMsgGateway> gateway);
     void SetConnection(std::shared_ptr<TcpConnection> connection);

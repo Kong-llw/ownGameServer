@@ -1,6 +1,12 @@
 #include "ReqHandler.hpp"
 #include "protocol/MessageProto.hpp"
+#include "protocol/mTcpProto.h"
 #include <cstring>
+
+bool ReqHandler::Authentication(const std::shared_ptr<Network::MsgPack>& msg) {
+    (void)msg;
+    return true;
+}
 
 bool ReqHandler::HandleDecodedMsg(const std::shared_ptr<Network::MsgPack>& pack) {
     if(!Authentication(pack)){
@@ -74,6 +80,7 @@ bool ReqHandler::HandleLoginRequest(const std::shared_ptr<Network::MsgPack>&& ms
 
     //按照UserId发送登录结果回去
     SendBackLoginResponse(msg, rsp);
+    return true;
 }
 
 void ReqHandler::SendBackLoginResponse(const std::shared_ptr<Network::MsgPack>& msg, const DBLoginRsp& rsp) {
@@ -84,25 +91,38 @@ void ReqHandler::SendBackLoginResponse(const std::shared_ptr<Network::MsgPack>& 
 
     uint8_t error_msg_size = static_cast<uint8_t>(rsp.error_msg.size());
     payload.push_back(static_cast<std::byte>(error_msg_size));
-    payload.insert(payload.end(), rsp.error_msg.begin(), rsp.error_msg.end());
+    auto msg_span = std::as_bytes(std::span{rsp.error_msg});
+    payload.insert(payload.end(), msg_span.begin(), msg_span.end());
 
     Network::EncodeMessage response_msg;
     response_msg.msg_id = msg->msg.msg_id; //回包使用同样的msg_id
+    response_msg.proto_type = static_cast<uint8_t>(ProtoType::Control);
     response_msg.main_type = static_cast<uint8_t>(MsgProto::MsgType::LOGINREQ);
     response_msg.sub_type = 1; //登录响应
-    response_msg.payload = std::move(payload);
-    response_msg.payload_owner = nullptr; //不需要共享所有权
+    auto owner = std::make_shared<Network::ByteVec>(std::move(payload));
+    response_msg.payload_owner = owner;
+    response_msg.payload = *owner;
 
     gateway_->SendMessageToSession(msg->sender_session_id, response_msg);
 }
 
 DBLoginRsp ReqHandler::ValidateLogin(const DBLoginReq& req) {
+    (void)req;
     //此处应调用数据库接口验证用户名密码, 这里直接模拟一个成功的返回
     DBLoginRsp rsp;
     rsp.user_id = 123; //模拟一个用户ID
     rsp.result = MsgProto::LoginResult::SUCCESS;
     return rsp;
 }
-bool ReqHandler::HandleLogoutRequest(const std::shared_ptr<Network::MsgPack>&& msg){}
-bool ReqHandler::HandleRoomJoinRequest(const std::shared_ptr<Network::MsgPack>&& msg){}
-bool ReqHandler::HandleRoomLeaveRequest(const std::shared_ptr<Network::MsgPack>&& msg){}
+bool ReqHandler::HandleLogoutRequest(const std::shared_ptr<Network::MsgPack>&& msg){
+    (void)msg;
+    return true;
+}
+bool ReqHandler::HandleRoomJoinRequest(const std::shared_ptr<Network::MsgPack>&& msg){
+    (void)msg;
+    return true;
+}
+bool ReqHandler::HandleRoomLeaveRequest(const std::shared_ptr<Network::MsgPack>&& msg){
+    (void)msg;
+    return true;
+}

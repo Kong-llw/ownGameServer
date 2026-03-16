@@ -14,7 +14,7 @@ namespace ProtoFlags{
     constexpr uint16_t ENDPART = 0x4;   //最后一个特殊包，保存整条信息的
 }
 
-enum class ProtoType : uint8_t {
+enum class ProtoType : uint8_t { //目前只用于识别心跳， 解码器只有一个，结构简单，没用上这个
     HeartBeat = 0,  //检查业务是否正常运行
     Control = 1,    //Session控制
     Data = 2,       //数据流

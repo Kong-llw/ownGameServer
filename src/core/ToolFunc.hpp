@@ -17,7 +17,7 @@
 #endif
 
 //用于检查流
-std::string ToHex(const std::string& data) {
+inline std::string ToHex(const std::string& data) {
     std::stringstream ss;
     // 设置格式：16进制，大写，填充0
     ss << std::hex << std::uppercase << std::setfill('0');

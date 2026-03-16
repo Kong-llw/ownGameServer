@@ -16,8 +16,9 @@ using SharedByteVec = std::shared_ptr<const ByteVec>;
 
 struct EncodeMessage {
     MsgId msg_id;
-    uint8_t main_type;
-    uint8_t sub_type;
+    uint8_t proto_type; //mTcpProto::ProtoType  控制编解码器
+    uint8_t main_type;  //MessageProto::MsgType 编码到payload
+    uint8_t sub_type;   //MessageProto::RoomReqType等  编码到payload
     ByteSpan payload;
     SharedByteVec payload_owner;
 };
@@ -30,6 +31,7 @@ struct EncodeResult {
 
 struct DecodedMessage {
     MsgId msg_id;
+    uint8_t proto_type;
     uint8_t main_type;
     uint8_t sub_type;
     ByteVec payload;
@@ -82,7 +84,7 @@ public:
     }
 
     DecodeResult DecodeSync(ByteSpan input) override {
-        return DecodeResult{true, "", {DecodedMessage{0, 0, 0, ByteVec(input.begin(), input.end())}}, input.size()};
+        return DecodeResult{true, "", {DecodedMessage{0, 0, 0, 0, ByteVec(input.begin(), input.end())}}, input.size()};
     }
 
     void DecodeAsync(SharedByteVec input, DecodeCallback callback) override {

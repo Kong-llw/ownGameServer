@@ -41,7 +41,11 @@ public:
 
     std::vector<RoomInListInfo> GetRoomList() const;
     std::optional<RoomId> RoomCodeToId(const std::string& room_code) const;
-    bool RoomBroadCast(RoomId room_id, Network::EncodeMessage& message);
+    bool RoomBroadCast(RoomId room_id, Network::EncodeMessage& message) {
+        (void)room_id;
+        (void)message;
+        return false;
+    }
     MatchInfo GetRoomMatchInfo(RoomId room_id);
     
     using Result = MsgProto::RoomReqResult;

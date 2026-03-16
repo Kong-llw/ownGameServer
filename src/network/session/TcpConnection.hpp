@@ -31,7 +31,7 @@ public:
     }
     void SetCloseCallback(CloseCallback callback) { close_callback_ = std::move(callback); }
     void SetMessageCallback(MessageCallback callback) { message_callback_ = std::move(callback); }
-    const SessionId GetSessionId() const { return session_id_; }
+    SessionId GetSessionId() const { return session_id_; }
 private:
     void DoRead();
     void DoWrite();

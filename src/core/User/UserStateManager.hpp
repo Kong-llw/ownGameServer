@@ -11,7 +11,7 @@
 class UserStateManager : public IUserStateStore {
 private:
     std::unordered_map<SessionId, UserBaseInfo> user_states;
-    std::shared_mutex state_mutex; 
+    mutable std::shared_mutex state_mutex;
 
 public:
     ~UserStateManager() = default;
