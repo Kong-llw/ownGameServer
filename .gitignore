@@ -21,3 +21,4 @@ Thumbs.db
 .github/
 ignore/
 build/
+*.sh
