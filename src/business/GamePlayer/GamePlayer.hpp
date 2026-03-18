@@ -11,18 +11,19 @@ namespace Network {
 namespace Game {
     class GamePlayer {
     public:
-        GamePlayer(UserId player_id, const std::string& name)
-            : info_{UserBaseInfo{player_id, 0, name, 0, true}, 0, 0, 0, false},
+        GamePlayer() = delete;
+        explicit GamePlayer(UserBaseInfo user_info)
+            : info_{user_info, 0, 0, 0, false},
             message_sender_(std::weak_ptr<Network::IMessageSender>()) {}
-        ~GamePlayer();
+        //~GamePlayer() = default;
 
         UserId GetPlayerId() const { return info_.b_info.user_id; }
         GroupId GetGroupId() const { return info_.b_info.current_group_id; }
         const GamePlayerInfo& GetInfo() const { return info_; }
         void UpdateInfo(const GamePlayerInfo& new_info);
 
-        void EnterRoom(RoomId room_id);
-        void LeaveRoom();
+        void EnterRoom(RoomId room_id){info_.b_info.current_group_id = room_id;};
+        void LeaveRoom(){info_.b_info.current_group_id = 0;};
         void SetMessageSender(std::shared_ptr<Network::IMessageSender> sender) { message_sender_ = sender; }
         // 发送消息接口
         bool SendMessage(const std::vector<std::byte>& message);

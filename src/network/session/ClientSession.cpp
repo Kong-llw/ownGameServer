@@ -1,7 +1,9 @@
 #include "ClientSession.hpp"
 
 #include <asio/buffer.hpp>
+#include <cstring>
 #include <stdexcept>
+#include <spdlog/spdlog.h>
 
 #include "protocol/mTcpProto.h"
 #include "protocol/MessageProto.hpp"
@@ -11,7 +13,7 @@ namespace Network {
 ClientSession::ClientSession(SessionId session_id,
      std::shared_ptr<IMessageCodec> codec,
      std::shared_ptr<IBusinessMsgGateway> gateway)
-    : session_id_(session_id), codec_(std::move(codec)), gateway_(std::move(gateway)) {
+    : session_id_(session_id), buffer_used_(0), codec_(std::move(codec)), gateway_(std::move(gateway)) {
         if (!codec_) {
             throw std::invalid_argument("ClientSession requires a non-null codec");
         }
@@ -52,9 +54,22 @@ void ClientSession::onSocketRecv(std::span<const std::byte> data) {
     if (data.empty()) {
         return;
     }
-    read_buffer_.insert(read_buffer_.end(), data.begin(), data.end());
-    auto decode_result = codec_->DecodeSync(read_buffer_);
-    read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + decode_result.cost_offset);
+    /*if (buffer_used_ + data.size() > read_buffer_.size()) {
+        // Buffer overflow, close connection to prevent DoS
+        Close();
+        return;
+    }*/
+    std::copy(data.begin(), data.end(), read_buffer_.begin() + buffer_used_);
+    buffer_used_ += data.size();
+    
+    auto decode_result = codec_->DecodeSync(std::span<const std::byte>(read_buffer_.data(), buffer_used_));
+    spdlog::info("Decoded message from session {}: success={}, cost_offset={}, err_messages={}", 
+        session_id_, decode_result.success, decode_result.cost_offset, decode_result.error_msg);
+    if (decode_result.cost_offset > 0) {
+        // Move remaining data to the front of the buffer
+        std::memmove(read_buffer_.data(), read_buffer_.data() + decode_result.cost_offset, buffer_used_ - decode_result.cost_offset);
+        buffer_used_ -= decode_result.cost_offset;
+    }
     
     if (!decode_result.success) {
         return;

@@ -5,11 +5,14 @@
 #include <string>
 #include <span>
 #include <cstddef>
+#include <asio.hpp>
 #include "core/Types.h"
 #include "business/Group/Group.hpp"
 #include "business/GameLogic/GameProto.hpp"
 #include "protocol/Router/IBusinessMsgGateway.hpp"
 #include "protocol/MessageProto.hpp"
+#include "business/GameLogic/GameCmdHandler.hpp"
+#include "business/GamePlayer/GamePlayer.hpp"
 
 struct GamePlayerInfo;
 enum class RoomState { LOBBY = 0, RUNNING = 1 };
@@ -35,62 +38,53 @@ struct GameRoomInfo {
 };
 
 namespace Game {
+    struct PlayerInfoKeyExtractor {
+        UserId operator()(const GamePlayerInfo& player) const { return player.b_info.user_id; }
+    };
+
     class GameRoom {
     public:
-        GameRoom();
-        ~GameRoom();
-        GameRoomInfo GetAllInfo() const {
-            auto snapshot = info_;
-            snapshot.capacity = group_.GetCapacity();
-            snapshot.player_count = group_.GetMemberCount();
-            return snapshot;
-        }
-        RoomInListInfo GetInListInfo() const {
-            return RoomInListInfo{
-                info_.room_code,
-                info_.room_name,
-                group_.GetCapacity(),
-                group_.GetMemberCount(),
-                info_.state,
-            };
-        }
-        const std::vector<UserId>& GetPlayersId() const { return group_.GetMembers(); }
+        GameRoom() = delete;
+        template <typename T, typename = std::enable_if_t<std::is_same_v<std::decay_t<T>, GameRoomInfo>>>
+        GameRoom(T&& info): info_(std::forward<T>(info)),
+         cmd_handler_(std::make_shared<GameCmdHandler>(info_.room_id,
+            [this](const UserId winner_id){ OnGameEnd(winner_id); })),
+         group_(Group<GamePlayerInfo, PlayerInfoKeyExtractor>{
+            GroupInfo<GamePlayerInfo>{info_.room_id, info_.capacity,{}}, PlayerInfoKeyExtractor{}}) {};
+
+        GameRoomInfo GetAllInfo() const;
+        RoomInListInfo GetInListInfo() const;
+        std::vector<UserId> GetPlayersId() const;
+        const std::string& GetRoomCode() const { return info_.room_code; }
 
         using Result = MsgProto::RoomReqResult;
         MatchInfo CreateMatchInfo(); // 游戏开始时根据创建房间信息，用于创建状态机
-        Result JoinRoom(UserId player_id) { return MapGroupResult(group_.AddMember(player_id)); }
-        Result LeaveRoom(UserId player_id) { return MapGroupResult(group_.RemoveMember(player_id)); }
+        Result JoinRoom(GamePlayerInfo player_info);
+        Result LeaveRoom(UserId player_id);
         Result SetReady(UserId player_id, bool ready);
         Result StartGame(UserId player_id);
         Result ChangeMap(UserId player_id, const std::string& map_path);
-        Result ChangeRoomName(UserId player_id, const std::string& new_name) {
-            if (player_id != info_.owner_id) {
-                return Result::NOT_OWNER;
-            }
-            info_.room_name = new_name;
-            return Result::OK;
-        }
-        Result ChangePassword(UserId player_id, const std::string& new_password) {
-            if (player_id != info_.owner_id) {
-                return Result::NOT_OWNER;
-            }
-            info_.password = new_password;
-            return Result::OK;
-        }
+        Result ChangeRoomName(UserId player_id, const std::string& new_name);
+        Result ChangePassword(UserId player_id, const std::string& new_password);
         Result KickPlayer(UserId player_id, UserId target_id);
-        Result ChangeCapacity(UserId player_id, size_t new_capacity) {
-            if (player_id != info_.owner_id) {
-                return Result::NOT_OWNER;
-            }
-            return MapGroupResult(group_.SetCapacity(new_capacity));
-        }
+        Result ChangeCapacity(UserId player_id, size_t new_capacity);
         Result DissolveRoom(UserId player_id);
 
         void Broadcast(Network::EncodeMessage& message);
         void SendTo(UserId playerId, Network::EncodeMessage& message);
 
         void SetMessageGateway(std::shared_ptr<Network::IBusinessMsgGateway> gateway) { message_gateway_ = gateway; }
+        void SetStrand(asio::strand<asio::any_io_executor> strand) {
+            strand_ = std::move(strand);
+            if (cmd_handler_) {
+                cmd_handler_->SetStrand(strand_);
+            }
+        }
     private:
+        bool IsRunning() const { return info_.state == RoomState::RUNNING; }
+        void SetRoomState(RoomState state) { info_.state = state; }
+        void OnGameEnd(const UserId winner_id); // 游戏结束时的回调，参数是赢家的玩家ID，具体逻辑可以根据实际需求调整
+        asio::strand<asio::any_io_executor> strand_;
         static Result MapGroupResult(GroupResult result) {
             switch (result) {
             case GroupResult::OK:
@@ -108,7 +102,9 @@ namespace Game {
         }
 
         GameRoomInfo info_;
-        Group group_;
+        std::shared_ptr<GameCmdHandler> cmd_handler_;
+        Group<GamePlayerInfo, PlayerInfoKeyExtractor> group_;
         std::shared_ptr<Network::IBusinessMsgGateway> message_gateway_;
+
     };
 }

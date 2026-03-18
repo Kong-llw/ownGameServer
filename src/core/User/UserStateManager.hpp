@@ -8,6 +8,8 @@
 #include "UserBaseInfo.hpp"
 #include "IUserStateStore.hpp"
 
+struct UserLoginInfo;
+
 class UserStateManager : public IUserStateStore {
 private:
     std::unordered_map<SessionId, UserBaseInfo> user_states;
@@ -15,6 +17,8 @@ private:
 
 public:
     ~UserStateManager() = default;
+    void OnUserLogin(const UserLoginInfo& info);
+    void OnUserLogout(const UserLoginInfo& info);
     std::optional<UserBaseInfo> GetUserState(UserId id) const override;
     bool UpdateUserGroup(UserId id, GroupId new_group_id) override;
     bool UpdateUserOnlineStatus(UserId id, bool is_online) override;

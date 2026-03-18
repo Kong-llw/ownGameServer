@@ -1,9 +1,14 @@
 # game_server/test/CMakeLists.txt
 # ========== 收集测试源码 ==========
-file(GLOB UNIT_TEST_SRCS "unit/*.h" "unit/*.cpp")
+file(GLOB UNIT_TEST_SRCS CONFIGURE_DEPENDS "unit/*.h" "unit/*.cpp")
 
 # ========== 构建测试可执行程序 ==========
 add_executable(unit_tests ${UNIT_TEST_SRCS})
+
+target_sources(unit_tests
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/business/GameLogic/GameMapIO.cpp
+)
 
 # ========== 链接依赖 ==========
 target_link_libraries(unit_tests

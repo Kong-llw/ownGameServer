@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 #if defined(__SSE4_2__) && (defined(__x86_64__) || defined(__i386__))
 #include <nmmintrin.h>
@@ -17,16 +18,22 @@
 #endif
 
 //用于检查流
-inline std::string ToHex(const std::string& data) {
+inline std::string ToHex(std::span<const std::byte> data) {
     std::stringstream ss;
     // 设置格式：16进制，大写，填充0
     ss << std::hex << std::uppercase << std::setfill('0');
-    
-    for (unsigned char c : data) {
+    int count = 0;
+    for (auto b : data) {
         // setw(2) 保证像 0x5 打印成 05
-        ss << std::setw(2) << static_cast<int>(c) << " ";
+        ss << std::setw(2) << static_cast<int>(std::to_integer<uint8_t>(b)) << " ";
+        count++;
+        if (count % 20 == 0) ss << "\n";
     }
     return ss.str();
+}
+
+inline std::string ToHex(const std::vector<std::byte>& data) {
+    return ToHex(std::span<const std::byte>(data));
 }
 
 inline uint32_t Crc32C(std::span<const std::byte> bytes) {

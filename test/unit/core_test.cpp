@@ -1,6 +1,6 @@
 // test/unit/core_test.cpp
 #include <gtest/gtest.h>
-#include <asio/asio.hpp>
+#include <asio.hpp>
 #include <nlohmann/json.hpp>
 
 // 测试Asio基础功能

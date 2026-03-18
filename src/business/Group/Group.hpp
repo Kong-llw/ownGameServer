@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -17,19 +18,31 @@ enum class GroupResult {
     INVALID_CAPACITY,
 };
 
+template <typename MemberT>
 struct GroupInfo {
     GroupId group_id{};
     std::size_t capacity{0};
-    std::vector<UserId> members;
+    std::vector<MemberT> members;
 };
 
+template <typename MemberT>
+struct IdentityKeyExtractor {
+    const MemberT& operator()(const MemberT& member) const { return member; }
+};
+
+template <typename MemberT, typename KeyExtractor = IdentityKeyExtractor<MemberT>>
 class Group {
 public:
-    Group() = default;
-    explicit Group(GroupInfo info) : info_(std::move(info)) {}
+    using KeyType = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<KeyExtractor>()(std::declval<const MemberT&>()))>>;
 
-    const GroupInfo& GetInfo() const { return info_; }
-    GroupInfo& GetInfo() { return info_; }
+    Group() = default;
+    explicit Group(GroupInfo<MemberT> info, KeyExtractor key_extractor = KeyExtractor())
+        : info_(std::move(info)), key_extractor_(std::move(key_extractor)) {
+        info_.members.reserve(info_.capacity);
+    }
+
+    const GroupInfo<MemberT>& GetInfo() const { return info_; }
+    GroupInfo<MemberT>& GetInfo() { return info_; }
 
     GroupId GetId() const { return info_.group_id; }
     void SetId(GroupId id) { info_.group_id = id; }
@@ -44,25 +57,26 @@ public:
     }
 
     std::size_t GetMemberCount() const { return info_.members.size(); }
-    const std::vector<UserId>& GetMembers() const { return info_.members; }
+    const std::vector<MemberT>& GetMembers() const { return info_.members; }
+    std::vector<MemberT>& GetMembers() { return info_.members; }
 
-    bool Contains(UserId user_id) const {
-        return std::find(info_.members.begin(), info_.members.end(), user_id) != info_.members.end();
+    bool Contains(const KeyType& member_key) const {
+        return FindMember(member_key) != nullptr;
     }
 
-    GroupResult AddMember(UserId user_id) {
-        if (Contains(user_id)) {
+    GroupResult AddMember(MemberT member) {
+        if (Contains(key_extractor_(member))) {
             return GroupResult::ALREADY_IN_GROUP;
         }
         if (info_.members.size() >= info_.capacity) {
             return GroupResult::FULL;
         }
-        info_.members.push_back(user_id);
+        info_.members.push_back(std::move(member));
         return GroupResult::OK;
     }
 
-    GroupResult RemoveMember(UserId user_id) {
-        auto it = std::find(info_.members.begin(), info_.members.end(), user_id);
+    GroupResult RemoveMember(const KeyType& member_key) {
+        auto it = FindMemberIter(member_key);
         if (it == info_.members.end()) {
             return GroupResult::NOT_IN_GROUP;
         }
@@ -70,8 +84,37 @@ public:
         return GroupResult::OK;
     }
 
+    MemberT* FindMember(const KeyType& member_key) {
+        auto it = FindMemberIter(member_key);
+        if (it == info_.members.end()) {
+            return nullptr;
+        }
+        return &(*it);
+    }
+
+    const MemberT* FindMember(const KeyType& member_key) const {
+        auto it = FindMemberIter(member_key);
+        if (it == info_.members.end()) {
+            return nullptr;
+        }
+        return &(*it);
+    }
+
+    void ClearMembers() { info_.members.clear(); }
+
 private:
-    GroupInfo info_;
+    auto FindMemberIter(const KeyType& member_key) {
+        return std::find_if(info_.members.begin(), info_.members.end(),
+            [&](const MemberT& member) { return key_extractor_(member) == member_key; });
+    }
+
+    auto FindMemberIter(const KeyType& member_key) const {
+        return std::find_if(info_.members.begin(), info_.members.end(),
+            [&](const MemberT& member) { return key_extractor_(member) == member_key; });
+    }
+
+    GroupInfo<MemberT> info_;
+    KeyExtractor key_extractor_{};
 };
 
 } // namespace Game

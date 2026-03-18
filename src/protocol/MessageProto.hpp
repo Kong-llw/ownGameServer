@@ -40,7 +40,9 @@ enum class RoomReqResult {
     INVALID_CAPACITY,
     ALREADY_RUNNING,
     NOT_READY,
+    GAME_RUNNING,
     GEN_ROOMCODE_FAILED,
+    ILLEGAL_OPERATION,
 
     EMPTY_REQ,
     NOT_AUTHORIZED,
@@ -63,6 +65,25 @@ enum class StartGameResult : uint8_t {
     INSUFFICIENT_CAPACITY = 3,
     UNKNOWN_ERROR = 4,
 };
+
+enum FSMState: uint8_t {
+    Init,       //导入数据
+    MapLoad,    //配置地图
+    WaitForPlayers, //就绪,等待其他玩家
+    BattleIntroAnimation, // 入场动画
+    
+    //战斗循环
+    TurnStart, //重置数据 显示效果等 触发结算之类的
+    TurnWaitInput, //接收输入
+    TurnActionResolving, //
+    EXPAND,
+    GROW,
+    TurnEndProcessing,
+    BattleCheckResult,
+    END,
+    BattleCleanup,
+};
+
 }
 struct UserLoginInfo { //login logout共用
     MsgProto::LoginResult result;

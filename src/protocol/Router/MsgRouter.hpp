@@ -50,7 +50,7 @@ public:
     bool SendMessageToUser(UserId id, EncodeMessage& msg) override;
     bool SendMessageToSession(SessionId id, EncodeMessage& msg) override;
     bool BroadcastToRoom(RoomId id, EncodeMessage& msg) override;
-
+    //bool BroadcastToRoom(RoomId id, EncodeMessage&& msg);
     bool onMsgReceive(const std::shared_ptr<Network::MsgPack>& msg) override;
     bool RegisterMsgHandler(uint8_t main_type, std::shared_ptr<IMsgHandler> handler);
     bool UnregisterMsgHandler(uint8_t main_type);

@@ -3,7 +3,8 @@
 
 #include <cstring>
 #include <utility>
-
+#include <iostream>
+#include "core/ToolFunc.hpp"
 
 void TcpConnection::Start() {
     auto self = shared_from_this();
@@ -58,6 +59,9 @@ void TcpConnection::DoRead() {
             if (message_callback_) {
                 //std::vector<std::byte> payload(length);
                 //std::memcpy(payload.data(), read_buffer_.data(), length);
+                auto byteString = ToHex(std::span<const std::byte>(read_buffer_.data(), length));
+
+                std::cout << byteString << std::endl;
                 message_callback_(std::span<std::byte>(read_buffer_.data(), length));
             }
 

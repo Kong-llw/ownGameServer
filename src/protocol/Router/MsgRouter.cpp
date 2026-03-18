@@ -1,7 +1,8 @@
 #include "MsgRouter.hpp"
 
 #include <stdexcept>
-
+#include <spdlog/spdlog.h>
+#include <core/ToolFunc.hpp>
 namespace Network { 
 
 MsgRouter::MsgRouter(std::shared_ptr<UserSessionMap> user_session_map)
@@ -78,6 +79,7 @@ bool MsgRouter::onMsgReceive(const std::shared_ptr<Network::MsgPack>& msg) {
     }
     msg->sender_id = user_session_map_->GetUserId(msg->sender_session_id);
     //HandleDecodedMsg必须为异步实现, 避免阻塞Router
+    spdlog::info("Router Received message: \n{}", ToHex(std::span<const std::byte>(msg->msg.payload.data(), msg->msg.payload.size())));
     return handler->HandleDecodedMsg(msg);
 }
 

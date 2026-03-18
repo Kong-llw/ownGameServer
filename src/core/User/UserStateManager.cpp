@@ -1,6 +1,29 @@
 #include "UserStateManager.hpp"
 #include <optional>
 #include <string>
+#include "protocol/MessageProto.hpp"
+
+void UserStateManager::OnUserLogin(const UserLoginInfo& info) {
+    if (info.result != MsgProto::LoginResult::SUCCESS || info.user_id == UserId{}) {
+        return;
+    }
+
+    UserBaseInfo state{
+        info.user_id,
+        0,
+        "player_" + std::to_string(info.user_id),
+        info.session_id,
+        true,
+    };
+    UpdateUserState(state);
+}
+
+void UserStateManager::OnUserLogout(const UserLoginInfo& info) {
+    if (info.user_id == UserId{}) {
+        return;
+    }
+    UpdateUserOnlineStatus(info.user_id, false);
+}
 
 std::optional<UserBaseInfo> UserStateManager::GetUserState(UserId id) const {
     std::shared_lock lock(state_mutex);

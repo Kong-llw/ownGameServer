@@ -36,6 +36,7 @@ private:
     SessionId session_id_;
     std::shared_ptr<TcpConnection> connection_;
     std::vector<std::byte> read_buffer_;
+    size_t buffer_used_;
     std::shared_ptr<IMessageCodec> codec_;
     std::shared_ptr<IBusinessMsgGateway> gateway_; //由sessionManager注入
 };

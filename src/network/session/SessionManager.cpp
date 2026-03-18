@@ -74,7 +74,8 @@ SessionId SessionManager::CreateSession(tcp::socket socket, std::shared_ptr<IMes
         }
         session_inserted = true;
         connection->Start();
-        EnsureHeartbeatSweepStarted();
+        //调试过程先关闭心跳
+        //EnsureHeartbeatSweepStarted();
 
         return session_id;
     }
