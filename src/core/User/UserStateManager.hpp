@@ -1,5 +1,5 @@
 #pragma once
-
+//此文件弃用 功能分给 PlayerManger 和Player
 #include <unordered_map>
 #include <shared_mutex>
 #include <optional>
@@ -12,7 +12,7 @@ struct UserLoginInfo;
 
 class UserStateManager : public IUserStateStore {
 private:
-    std::unordered_map<SessionId, UserBaseInfo> user_states;
+    std::unordered_map<UserId, UserBaseInfo> user_states; //未登录的不参与业务
     mutable std::shared_mutex state_mutex;
 
 public:

@@ -19,9 +19,8 @@ class GameCmdHandler : public IMsgHandler{ //虽然也是Handler 但每个GameRo
     using ClearUserTilesCallback = std::function<void(const UserId player_id)>;
 public:
     GameCmdHandler() = delete;
-    GameCmdHandler(RoomId room_id, GameEndCallback end_callback);
+    GameCmdHandler(RoomId room_id, asio::any_io_executor executor, GameEndCallback end_callback);
     ~GameCmdHandler() = default;
-    void SetStrand(asio::strand<asio::any_io_executor> strand);
     void StartTicking(std::chrono::milliseconds interval = std::chrono::milliseconds(50));
     void StopTicking();
 

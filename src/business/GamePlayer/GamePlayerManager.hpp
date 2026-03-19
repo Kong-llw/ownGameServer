@@ -6,14 +6,12 @@
 #include <optional>
 #include <string>
 #include "business/GamePlayer/GamePlayer.hpp"
-#include "core/User/UserStateManager.hpp"
 #include "network/session/IMessageSender.hpp"
-
+#include "protocol/MessageProto.hpp"
 namespace Game {
     class GamePlayerManager {
     public:
-        GamePlayerManager(std::shared_ptr<UserStateManager> user_state_manager) 
-        : user_state_manager_(std::move(user_state_manager)) {}
+        GamePlayerManager() = default;
         ~GamePlayerManager() = default;
 
         // 创建玩家实例
@@ -29,7 +27,7 @@ namespace Game {
         void SetPlayerRoom(UserId player_id, RoomId room_id);
     private:
         std::unordered_map<UserId, std::shared_ptr<GamePlayer>> players_;
-        std::shared_ptr<UserStateManager> user_state_manager_; // 引用用户状态管理器 不含业务信息
+        // 玩家自身管理用户数据，PlayerManager 只负责管理 Player 实例
         mutable std::shared_mutex player_manager_mutex_; // 保护players_的线程安全
     };  
 }

@@ -4,14 +4,10 @@
 
 #include "GameProto.hpp"
 
-GameCmdHandler::GameCmdHandler(RoomId room_id, GameEndCallback end_callback)
-    : room_id_(room_id), game_end_callback_(std::move(end_callback)) {
+GameCmdHandler::GameCmdHandler(RoomId room_id, asio::any_io_executor executor, GameEndCallback end_callback)
+    : strand_(asio::make_strand(executor)),tick_timer_(std::make_unique<asio::steady_timer>(strand_)),
+     room_id_(room_id), game_end_callback_(std::move(end_callback)) {
     InitGameState();
-}
-
-void GameCmdHandler::SetStrand(asio::strand<asio::any_io_executor> strand) {
-    strand_ = std::move(strand);
-    tick_timer_ = std::make_unique<asio::steady_timer>(strand_);
 }
 
 void GameCmdHandler::StartTicking(std::chrono::milliseconds interval) {

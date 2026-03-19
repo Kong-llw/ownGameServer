@@ -56,7 +56,6 @@ public:
 
     static std::string serializeRoomList(const std::vector<RoomInListInfo>& rooms);
     static std::string serializeRoomInfo(const MatchInfo& rooms);
-    
     static std::string serializeCreateRoomResult(const std::string& room_code, MsgProto::RoomReqResult res);
 private:
     JSONTranslator() = default;

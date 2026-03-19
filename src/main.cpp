@@ -8,13 +8,13 @@
 #include "business/HeartbeatHandler.hpp"
 #include "business/GameRoom/GameRoomManager.hpp"
 #include "business/GamePlayer/GamePlayerManager.hpp"
-#include "core/User/UserStateManager.hpp"
+#include "business/GameRoom/RoomReqHandler.hpp"
 
 struct InitResources {
     std::shared_ptr<ReqHandler> req_handler;
     std::shared_ptr<HearbeatHandler> heartbeat_handler;
+    std::shared_ptr<Game::RoomReqHandler> room_req_handler;
     std::shared_ptr<Game::GameRoomManager> room_manager;
-    std::shared_ptr<UserStateManager> user_state_manager;
     std::shared_ptr<Game::GamePlayerManager> player_manager;
 };
 
@@ -23,20 +23,25 @@ void initialize(Network::TcpServer& server, asio::io_context& business_context, 
     
     resources.req_handler = std::make_shared<ReqHandler>(asio::make_strand(business_executor));
     resources.req_handler->SetGateway(server.msg_router_);
+
     resources.heartbeat_handler = std::make_shared<HearbeatHandler>();
     resources.heartbeat_handler->SetGateway(server.msg_router_);
-    resources.user_state_manager = std::make_shared<UserStateManager>();
-    resources.player_manager = std::make_shared<Game::GamePlayerManager>(resources.user_state_manager);
+
+    resources.player_manager = std::make_shared<Game::GamePlayerManager>();
+    
     resources.room_manager = std::make_shared<Game::GameRoomManager>(business_executor);
     resources.room_manager->SetPlayerManager(resources.player_manager);
-    
+
+    resources.room_req_handler = std::make_shared<Game::RoomReqHandler>(asio::make_strand(business_executor), resources.room_manager);
+    resources.room_req_handler->SetGateway(server.msg_router_);
+
     server.msg_router_->SetRoomManager(resources.room_manager);
     server.msg_router_->SetSessionManager(server.session_manager_);
     /*注册消息处理器， 目前这个是并不符合最初预期的， 预定是要根据 ProtoType去分发，但是现在基本只有业务处理器，
     只有心跳包不是业务处理逻辑， 所以就把心跳也作为一个MsgType，用MsgType去映射了*/
     server.msg_router_->RegisterMsgHandler(static_cast<uint8_t>(MsgProto::MsgType::HEARTBEAT), resources.heartbeat_handler);
     server.msg_router_->RegisterMsgHandler(static_cast<uint8_t>(MsgProto::MsgType::LOGINREQ), resources.req_handler);
-    server.msg_router_->RegisterMsgHandler(static_cast<uint8_t>(MsgProto::MsgType::ROOMREQ), resources.req_handler);
+    server.msg_router_->RegisterMsgHandler(static_cast<uint8_t>(MsgProto::MsgType::ROOMREQ), resources.room_req_handler);
     //chatmsg->
 
     resources.heartbeat_handler->RegisterHeartbeatCallback([session_manager = server.session_manager_](SessionId session_id){

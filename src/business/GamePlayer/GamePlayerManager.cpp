@@ -8,13 +8,8 @@ std::shared_ptr<GamePlayer> GamePlayerManager::CreatePlayer(UserId player_id) {
     if (it != players_.end()) {
         return it->second;
     }
-    //要求用户合法
-    std::optional<UserBaseInfo> user_base_info = user_state_manager_->GetUserState(player_id);
-    if (!user_base_info) {
-        return nullptr;
-    }
-    //根据用户信息构造玩家信息
-    auto player = std::make_shared<GamePlayer>(user_base_info.value());
+    // 根据 player_id 构造玩家，由 Player 自行维护数据
+    auto player = std::make_shared<GamePlayer>(player_id);
     players_.emplace(player_id, player);
     return player;
 }
@@ -28,19 +23,10 @@ std::shared_ptr<GamePlayer> GamePlayerManager::GetPlayer(UserId player_id) {
     return it->second;
 }
 std::optional<GamePlayerInfo> GamePlayerManager::GetPlayerInfo(UserId player_id) const {
-    auto user_state = user_state_manager_->GetUserState(player_id);
-    if (!user_state) {
-        return std::nullopt;
-    }
-
-    GamePlayerInfo info{
-        *user_state,
-        0,
-        0,
-        0,
-        false,
-    };
-    return info;
+    std::shared_lock lock(player_manager_mutex_);
+    auto it = players_.find(player_id);
+    if (it == players_.end()) return std::nullopt;
+    return it->second->GetInfo();
 }
 // 移除玩家实例
 void GamePlayerManager::RemovePlayer(UserId player_id) {
@@ -49,18 +35,25 @@ void GamePlayerManager::RemovePlayer(UserId player_id) {
 }
 
 void GamePlayerManager::onUserLogin(UserLoginInfo info) {
-    if(info.result != MsgProto::LoginResult::SUCCESS|| info.user_id == UserId{}) {
+    if(info.result != MsgProto::LoginResult::SUCCESS || info.user_id == UserId{}) {
         return;
     }
-    user_state_manager_->OnUserLogin(info);
-    CreatePlayer(info.user_id);
+    // 创建玩家并设置会话/在线状态，由 Player 自行维护数据
+    auto player = CreatePlayer(info.user_id);
+    if (player) {
+        player->SetSession(info.session_id);
+        player->SetOnline(true);
+    }
 }
 
 void GamePlayerManager::onUserLogout(UserLoginInfo info) {
     if(info.user_id == UserId{}) {
         return;
     }
-    user_state_manager_->OnUserLogout(info);
+    auto player = GetPlayer(info.user_id);
+    if (player) {
+        player->SetOnline(false);
+    }
     RemovePlayer(info.user_id);
 }
 

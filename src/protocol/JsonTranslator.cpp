@@ -6,7 +6,7 @@ using nlohmann::json;
 std::string JSONTranslator::createGameCommandJSON(GameCmdType cmdType, const std::string& cmdData) {
     return R"({"cmd_type":)" + std::to_string(static_cast<uint8_t>(cmdType)) + R"(,"cmd_data":)" + cmdData + R"(})";
 }
-
+//所有使用到这个转义功能的，都没有做好避免拷贝的处理，会进行一次string->vector<byte>的拷贝。
 //识别json并转化为BattleCmd结构，供GameRoom使用
 BattleCmd JSONTranslator::ParseCommand(const std::string& jsonStr) {
     BattleCmd cmd{};

@@ -2,6 +2,7 @@
 #include "protocol/MessageProto.hpp"
 #include "protocol/mTcpProto.h"
 #include <cstring>
+#include "protocol/JsonTranslator.hpp"
 
 bool ReqHandler::Authentication(const std::shared_ptr<Network::MsgPack>& msg) {
     (void)msg;
@@ -26,21 +27,6 @@ bool ReqHandler::HandleDecodedMsg(const std::shared_ptr<Network::MsgPack>& pack)
                 case 1: //登出
                     asio::post(strand_, [this, pack](){
                         HandleLogoutRequest(std::move(pack));
-                    });
-                    return true;
-                default:
-                    return false;
-            }
-        case static_cast<uint8_t>(MsgProto::MsgType::ROOMREQ):
-            switch(pack->msg.sub_type) {
-                case 0: //加入房间
-                    asio::post(strand_, [this, pack](){
-                        HandleRoomJoinRequest(std::move(pack));
-                    });
-                    return true;
-                case 1: //离开房间
-                    asio::post(strand_, [this, pack](){
-                        HandleRoomLeaveRequest(std::move(pack));
                     });
                     return true;
                 default:
@@ -85,20 +71,20 @@ bool ReqHandler::HandleLoginRequest(const std::shared_ptr<Network::MsgPack>&& ms
 
 void ReqHandler::SendBackLoginResponse(const std::shared_ptr<Network::MsgPack>& msg, const DBLoginRsp& rsp) {
     std::vector<std::byte> payload;
-    payload.push_back(static_cast<std::byte>(rsp.result));
-    uint32_t user_id_net = htonl(rsp.user_id);
+    //用户ID
+    UserId user_id_net = htonl(rsp.user_id);
     payload.insert(payload.end(), reinterpret_cast<std::byte*>(&user_id_net), reinterpret_cast<std::byte*>(&user_id_net) + sizeof(user_id_net));
-
-    uint8_t error_msg_size = static_cast<uint8_t>(rsp.error_msg.size());
-    payload.push_back(static_cast<std::byte>(error_msg_size));
-    auto msg_span = std::as_bytes(std::span{rsp.error_msg});
+    //用户名称大小 和 字符串
+    uint8_t username_size = static_cast<uint8_t>(rsp.user_name.size());
+    payload.push_back(static_cast<std::byte>(username_size));
+    auto msg_span = std::as_bytes(std::span{rsp.user_name});
     payload.insert(payload.end(), msg_span.begin(), msg_span.end());
 
     Network::EncodeMessage response_msg;
     response_msg.msg_id = msg->msg.msg_id; //回包使用同样的msg_id
     response_msg.proto_type = static_cast<uint8_t>(ProtoType::Control);
     response_msg.main_type = static_cast<uint8_t>(MsgProto::MsgType::LOGINREQ);
-    response_msg.sub_type = 1; //登录响应
+    response_msg.sub_type = static_cast<uint8_t>(rsp.result); //登录响应
     auto owner = std::make_shared<Network::ByteVec>(std::move(payload));
     response_msg.payload_owner = owner;
     response_msg.payload = *owner;
@@ -112,17 +98,11 @@ DBLoginRsp ReqHandler::ValidateLogin(const DBLoginReq& req) {
     DBLoginRsp rsp;
     rsp.user_id = 123; //模拟一个用户ID
     rsp.result = MsgProto::LoginResult::SUCCESS;
+    rsp.user_name = "Player123";
     return rsp;
 }
 bool ReqHandler::HandleLogoutRequest(const std::shared_ptr<Network::MsgPack>&& msg){
     (void)msg;
     return true;
 }
-bool ReqHandler::HandleRoomJoinRequest(const std::shared_ptr<Network::MsgPack>&& msg){
-    (void)msg;
-    return true;
-}
-bool ReqHandler::HandleRoomLeaveRequest(const std::shared_ptr<Network::MsgPack>&& msg){
-    (void)msg;
-    return true;
-}
+

@@ -23,16 +23,16 @@ std::vector<UserId> GameRoom::GetPlayersId() const {
     std::vector<UserId> player_ids;
     player_ids.reserve(group_.GetMemberCount());
     for (const auto& player : group_.GetMembers()) {
-        player_ids.push_back(player.b_info.user_id);
+        if (player) player_ids.push_back(player->GetPlayerId());
     }
     return player_ids;
 }
 
-MatchInfo GameRoom::CreateMatchInfo() {
+MatchInfo GameRoom::CreateMatchInfo() { //MARK 修改一下，加入房间的时候需要这个来渲染客户端
     std::vector<GamePlayerInfo> player_infos;
     player_infos.reserve(group_.GetMemberCount());
     for (const auto& player : group_.GetMembers()) {
-        player_infos.push_back(player);
+        if (player) player_infos.push_back(player->GetInfo());
     }
     MatchInfo match_info{
         std::move(player_infos),
@@ -42,15 +42,15 @@ MatchInfo GameRoom::CreateMatchInfo() {
     return match_info;
 }
 
-Result GameRoom::JoinRoom(GamePlayerInfo player_info) {
+Result GameRoom::JoinRoom(std::shared_ptr<GamePlayer> player) {
     if (IsRunning()) {
         return Result::GAME_RUNNING;
     }
-    if (player_info.b_info.user_id == UserId{}) {
+    if (!player || player->GetPlayerId() == UserId{}) {
         return Result::NOT_AUTHORIZED;
     }
-    player_info.b_info.current_group_id = info_.room_id;
-    return MapGroupResult(group_.AddMember(std::move(player_info)));
+    player->EnterRoom(info_.room_id);
+    return MapGroupResult(group_.AddMember(std::move(player)));
 }
 
 Result GameRoom::LeaveRoom(UserId player_id) {
@@ -58,11 +58,13 @@ Result GameRoom::LeaveRoom(UserId player_id) {
 }
 
 Result GameRoom::SetReady(UserId player_id, bool ready) {
-    auto* player = group_.FindMember(player_id);
-    if (player == nullptr) {
+    auto* player_ptr = group_.FindMember(player_id);
+    if (player_ptr == nullptr) {
         return Result::NOT_IN_ROOM;
     }
-    player->ready = ready;
+    auto& sp = *player_ptr; // sp is std::shared_ptr<GamePlayer>
+    if (!sp) return Result::NOT_IN_ROOM;
+    sp->SetReady(ready);
     return Result::OK;
 }
 
@@ -151,7 +153,7 @@ Result GameRoom::DissolveRoom(UserId player_id) {
 
 void GameRoom::Broadcast(Network::EncodeMessage& message) {
     for (const auto& player : group_.GetMembers()) {
-        SendTo(player.b_info.user_id, message);
+        if (player) SendTo(player->GetPlayerId(), message);
     }
 }
 void GameRoom::OnGameEnd(const UserId winner_id) {

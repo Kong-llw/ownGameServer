@@ -2,7 +2,7 @@
 *.exe
 bin/
 1
-
+strip_server
 # 构建文件
 *.o
 *.a

@@ -70,20 +70,19 @@ Result GameRoomManager::CreateRoom(GameRoomInfo&& room_info, std::string& out_ro
     std::string generated_code = RoomUtils::GenRoomCode();
     room_info.room_id = new_room_id;
     room_info.room_code = generated_code;
-    auto new_room = std::make_shared<GameRoom>(std::move(room_info));
+    auto new_room = std::make_shared<GameRoom>(std::move(room_info), executor_);
     new_room->SetMessageGateway(message_gateway_);
-    new_room->SetStrand(asio::make_strand(executor_));
 
     auto player_manager = player_manager_.lock();
     if (!player_manager) {
         return Result::UNKNOWN_ERROR;
     }
-    auto owner_info = player_manager->GetPlayerInfo(new_room->GetAllInfo().owner_id);
-    if (!owner_info) {
+    auto owner_player = player_manager->GetPlayer(room_info.owner_id);
+    if (!owner_player) {
         return Result::NOT_AUTHORIZED;
     }
 
-    Result join_owner_result = new_room->JoinRoom(std::move(owner_info.value()));
+    Result join_owner_result = new_room->JoinRoom(owner_player);
     if (join_owner_result != Result::OK) {
         return join_owner_result;
     }
@@ -105,11 +104,11 @@ Result GameRoomManager::JoinRoom(RoomId room_id, UserId player_id){
     if (!player_manager) {
         return Result::UNKNOWN_ERROR;
     }
-    auto player_info = player_manager->GetPlayerInfo(player_id);
-    if (!player_info) {
+    auto player = player_manager->GetPlayer(player_id);
+    if (!player) {
         return Result::NOT_AUTHORIZED;
     }
-    return room_opt.value()->JoinRoom(std::move(player_info.value()));
+    return room_opt.value()->JoinRoom(player);
 }
 
 Result GameRoomManager::LeaveRoom(RoomId room_id, UserId player_id){

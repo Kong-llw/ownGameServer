@@ -109,4 +109,5 @@ struct DBLoginRsp{
     UserId user_id;
     MsgProto::LoginResult result;
     std::string error_msg; //登录失败时的错误信息
+    std::string user_name; //字符串的玩家角色名称
 };
