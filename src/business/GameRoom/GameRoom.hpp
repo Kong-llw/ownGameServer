@@ -35,6 +35,8 @@ struct GameRoomInfo {
     size_t player_count;    //当前玩家数量
     RoomState state;        //房间状态
     std::string selected_map_path; 
+    std::vector<GamePlayerInfo> players;
+    int SeatIndex;//此结构体用于回复加入房间，此值用于回复玩家座位号(只在序列化时赋值)
 };
 
 namespace Game {

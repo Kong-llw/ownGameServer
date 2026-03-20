@@ -21,9 +21,6 @@ class GamePlayerManager;
 
 class GameRoomManager{
 public:
-    explicit GameRoomManager(asio::any_io_executor executor)
-     : executor_(std::move(executor)) {}
-
     explicit GameRoomManager(asio::any_io_executor executor, std::shared_ptr<Network::IBusinessMsgGateway> message_gateway)
      : executor_(std::move(executor)), message_gateway_(std::move(message_gateway)) {}
 

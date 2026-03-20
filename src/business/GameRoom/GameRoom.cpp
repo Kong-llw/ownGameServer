@@ -6,6 +6,14 @@ GameRoomInfo GameRoom::GetAllInfo() const {
     auto snapshot = info_;
     snapshot.capacity = group_.GetCapacity();
     snapshot.player_count = group_.GetMemberCount();
+    auto vec = group_.GetMembers();
+    std::vector<GamePlayerInfo> player_infos;
+    for (const auto& player : vec) {
+        if (player) {
+            player_infos.push_back(player->GetInfo());
+        }
+    }
+    snapshot.players = std::move(player_infos);
     return snapshot;
 }
 
@@ -50,11 +58,19 @@ Result GameRoom::JoinRoom(std::shared_ptr<GamePlayer> player) {
         return Result::NOT_AUTHORIZED;
     }
     player->EnterRoom(info_.room_id);
-    return MapGroupResult(group_.AddMember(std::move(player)));
+    Result ret = MapGroupResult(group_.AddMember(std::move(player)));
+    if(ret == Result::OK){
+        info_.player_count++;
+    }
+    return ret;
 }
 
 Result GameRoom::LeaveRoom(UserId player_id) {
-    return MapGroupResult(group_.RemoveMember(player_id));
+    Result ret = MapGroupResult(group_.RemoveMember(player_id));
+    if(ret == Result::OK){
+        info_.player_count--;
+    }
+    return ret;
 }
 
 Result GameRoom::SetReady(UserId player_id, bool ready) {

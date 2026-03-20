@@ -49,8 +49,13 @@ bool RoomReqHandler::HandleDecodedMsg(const std::shared_ptr<Network::MsgPack>& p
 }
 
 bool RoomReqHandler::HandleRoomJoinRequest(const std::shared_ptr<Network::MsgPack>&& msg){
-    std::string room_code;
+    std::string room_code(6, '\0');
     memcpy(room_code.data(), msg->msg.payload.data(), 6);
+    std::string password;
+    if(msg->msg.payload.size() > 6){ //有房间密码
+        password.resize(msg->msg.payload.size() - 6);
+        memcpy(password.data(), msg->msg.payload.data() + 6, msg->msg.payload.size() - 6);
+    }
     std::optional<RoomId> room_id = game_room_manager_->RoomCodeToId(room_code);
     std::vector<std::byte> payload;
     Network::EncodeMessage response_msg;
@@ -68,22 +73,23 @@ bool RoomReqHandler::HandleRoomJoinRequest(const std::shared_ptr<Network::MsgPac
     }
 
     MsgProto::RoomReqResult out_res = game_room_manager_->JoinRoom(room_id.value(), msg->sender_id);
-    payload.push_back(static_cast<std::byte>(out_res));
     
     if(out_res == MsgProto::RoomReqResult::OK){
-        std::optional<MatchInfo> match_info = game_room_manager_->GetRoomMatchInfo(room_id.value());
-        if(match_info){
-            std::string jsonData = JSONTranslator::serializeRoomInfo(match_info.value());
+        std::optional<GameRoomInfo> info = game_room_manager_->GetRoomInfo(game_room_manager_->RoomCodeToId(room_code).value());
+        if(info){
+            std::string jsonData = JSONTranslator::serializeRoomInfo(info.value());
             std::vector<std::byte> bytes(jsonData.size());
             memcpy(bytes.data(), jsonData.data(), jsonData.size());
             payload.insert(payload.end(), bytes.begin(), bytes.end());
         }
+    }else{
+        payload.push_back(static_cast<std::byte>(out_res));
     }
     response_msg.payload = payload;
     response_msg.payload_owner = std::make_shared<Network::ByteVec>(payload);
     gateway_->SendMessageToUser(msg->sender_id, response_msg);
 
-    //玩家加入广播信息
+    //玩家加入广播信息 MARK 需要改一下 会因为时序问题，导致有时候能看到，有时候看不到
     if(out_res == MsgProto::RoomReqResult::OK){
         std::string text = "NewPlayer Joined Room";
         std::vector<std::byte> bytes(text.size());
@@ -137,11 +143,21 @@ bool RoomReqHandler::HandleRoomCreateRequest(const std::shared_ptr<Network::MsgP
     temp.password = password;
     temp.owner_id = msg->sender_id;
     temp.capacity = 4;
+    temp.selected_map_path = "default_map.json"; //默认地图路径
+    temp.state = RoomState::LOBBY;
     MsgProto::RoomReqResult out_res;
     out_res = game_room_manager_->CreateRoom(std::move(temp), out_room_code);
 
     //根据房间创建结果，构造回复信息
-    std::string str = JSONTranslator::serializeCreateRoomResult(out_room_code, out_res);
+    std::string str;
+    if(out_res != MsgProto::RoomReqResult::OK){
+        str.append(JSONTranslator::serializeCreateRoomResult(out_room_code, out_res));
+    }else{ //如果成功，直接回复房间信息
+        std::optional<GameRoomInfo> info = game_room_manager_->GetRoomInfo(game_room_manager_->RoomCodeToId(out_room_code).value());
+        if(info)
+            str.append(JSONTranslator::serializeRoomInfo(info.value()));
+    }
+    
     std::vector<std::byte> payload(str.size());
     memcpy(payload.data(), str.data(), str.size());
     auto temp_owner = std::make_shared<Network::ByteVec>(std::move(payload));

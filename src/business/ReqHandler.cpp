@@ -96,9 +96,9 @@ DBLoginRsp ReqHandler::ValidateLogin(const DBLoginReq& req) {
     (void)req;
     //此处应调用数据库接口验证用户名密码, 这里直接模拟一个成功的返回
     DBLoginRsp rsp;
-    rsp.user_id = 123; //模拟一个用户ID
+    rsp.user_id = 123+req.user_name.size(); //模拟一个用户ID
     rsp.result = MsgProto::LoginResult::SUCCESS;
-    rsp.user_name = "Player123";
+    rsp.user_name = std::format("Player{}", req.user_name); //模拟一个用户名称
     return rsp;
 }
 bool ReqHandler::HandleLogoutRequest(const std::shared_ptr<Network::MsgPack>&& msg){

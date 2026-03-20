@@ -29,7 +29,7 @@ void initialize(Network::TcpServer& server, asio::io_context& business_context, 
 
     resources.player_manager = std::make_shared<Game::GamePlayerManager>();
     
-    resources.room_manager = std::make_shared<Game::GameRoomManager>(business_executor);
+    resources.room_manager = std::make_shared<Game::GameRoomManager>(business_executor, server.msg_router_);
     resources.room_manager->SetPlayerManager(resources.player_manager);
 
     resources.room_req_handler = std::make_shared<Game::RoomReqHandler>(asio::make_strand(business_executor), resources.room_manager);

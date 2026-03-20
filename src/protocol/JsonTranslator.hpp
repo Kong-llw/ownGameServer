@@ -55,7 +55,8 @@ public:
     static BattleCmd ParseCommand(const std::string& jsonStr);
 
     static std::string serializeRoomList(const std::vector<RoomInListInfo>& rooms);
-    static std::string serializeRoomInfo(const MatchInfo& rooms);
+    static std::string serializeRoomInfo(const GameRoomInfo& rooms);
+    static std::string serializeMatchInfo(const MatchInfo& info);
     static std::string serializeCreateRoomResult(const std::string& room_code, MsgProto::RoomReqResult res);
 private:
     JSONTranslator() = default;

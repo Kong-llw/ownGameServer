@@ -125,7 +125,34 @@ std::string JSONTranslator::serializeRoomList(const std::vector<RoomInListInfo>&
     }
     return root.dump();
 }
-std::string JSONTranslator::serializeRoomInfo(const MatchInfo& info){
+std::string JSONTranslator::serializeRoomInfo(const GameRoomInfo& info){
+    json root;
+    root["cmd_type"] = GAMEDATA_PLAYERINROOM;
+    root["players"] = json::array();
+    auto& playerArray = root["players"];
+    json p;
+    for(const auto& player : info.players){
+        p.clear();
+        p["user_id"] = player.b_info.user_id;
+        p["user_name"] = std::string(player.b_info.user_name);
+        p["seat_index"] = player.seat_index;
+        p["color"] = player.color;
+        p["position"] = player.position;
+        playerArray.emplace_back(std::move(p));
+    }
+    root["state"] = static_cast<uint8_t>(info.state);
+    root["room_code"] = info.room_code;
+    root["room_name"] = info.room_name;
+    root["password"] = info.password;
+    root["capacity"] = info.capacity;
+    root["player_count"] = info.player_count;
+    root["selected_map_path"] = info.selected_map_path;
+    root["owner_id"] = info.owner_id;
+    root["seat_index"] = info.player_count -1;//MARK 看情况改逻辑，如果座位号需要特殊维护的话
+    return root.dump();
+}
+
+std::string JSONTranslator::serializeMatchInfo(const MatchInfo& info){
     json root;
     root["cmd_type"] = GAMEDATA_PLAYERINROOM;
     root["players"] = json::array();
@@ -144,6 +171,7 @@ std::string JSONTranslator::serializeRoomInfo(const MatchInfo& info){
     root["OwnerID"] = info.owner_id;
     return root.dump();
 }
+
 
 std::string JSONTranslator::serializeCreateRoomResult(const std::string& room_code, MsgProto::RoomReqResult res) {
     json root;
